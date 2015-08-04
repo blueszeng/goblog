@@ -1,0 +1,56 @@
+<div class="row">
+  <div class="large-12 columns">
+    <h1>Site Administration</h1>
+    <p>Begin, be bold and venture to be wise. - Horace</p>
+  </div>
+</div>
+
+<div ng-if="user.role == 'Guest'">
+  <div class="row">
+    <div class="large-5 large-centered medium-6 medium-centered small-11 small-centered columns panel">
+        <h3>Log in for access</h3>
+        <br/>
+        <br/>
+        <div class="button-container centered">
+          <a href="{{user.loginURL}}" class="button"><i class="fa fa-google fa-fw"></i>&nbsp;Sign in with Google</a>
+        </div>
+    </div>
+  </div>
+</div>
+
+<div ng-if="user.role == 'SiteAdmin'" class="row">
+  <div class="row">
+    <div class="large-5 large-centered medium-6 medium-centered small-11 small-centered columns panel">
+      <h3>Welcome {{user.displayName}}</h3>
+      <p>This is where you can manage every aspect of the blog site.</p>
+    </div>
+  </div>  
+</div>
+
+
+<div ng-if="user.role == 'UnknownUser'" class="row">
+  <div class="row">
+    <div class="large-5 large-centered medium-6 medium-centered small-11 small-centered columns panel">
+      <h3>You are not authorized</h3>
+      <br/>
+      <br/>
+      <div class="button-container centered">
+        <a href="{{user.logoutURL}}" class="button">Logout</a>
+      </div>
+    </div>
+  </div>  
+</div>
+
+
+<div ng-if="user.role == 'KnownUser'" class="row">
+  <div class="row">
+    <div class="large-5 large-centered medium-6 medium-centered small-11 small-centered columns panel">
+      <h3>Sorry, {{user.displayName}}</h3>
+      <h4>You are not authorized.</h4>
+      <br/>
+      <div class="button-container centered">
+        <a href="{{user.logoutURL}}" class="button">Logout</a>
+      </div>
+    </div>
+  </div>
+</div>

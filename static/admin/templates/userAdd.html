@@ -1,0 +1,26 @@
+<div class="row" id="userAdd">
+	<div class="small-12 columns">
+		<h2>Add New User</h2>
+	</div>
+</div>
+<form class="simple-form">
+	<div class="row">
+		<div class="small-12 columns">
+	      <label>User Email
+	        <input type="text" ng-model="newUser.email" placeholder="Enter new user email address." />
+	      </label>
+	    </div>
+	</div>
+    <div class="row">
+    	<div class="small-12 columns">
+    		<div class="row">
+    			<div class="small-6 columns">
+ 	    			<input class="button success expand" type="submit" ng-click="add(newUser)" value="Save" />				
+ 				</div>
+    			<div class="small-6 columns">
+ 					<input class="button alert expand" ng-click="cancelEdit()" value="Cancel" />
+ 				</div>
+    		</div>
+    	</div>
+    </div>
+</form>

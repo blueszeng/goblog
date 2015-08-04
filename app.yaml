@@ -1,0 +1,29 @@
+application: bamboo-host-89011
+version: alpha-0-1
+runtime: go
+api_version: go1
+
+handlers:
+
+-   url: /favicon.ico
+    static_files: assets/favicon.ico
+    upload: assets/favicon.ico
+
+-   url: /robots.txt
+    static_files: assets/robots.txt
+    upload: assets/robots.txt
+  
+-   url: /assets
+    static_dir: assets
+    
+-   url: /blog/js
+    static_dir: js
+
+-   url: /foundation/assets
+    static_dir: static/foundation
+    
+-   url: /admin/js
+    static_dir: static/admin/js
+
+-   url: /.*
+    script: _go_app

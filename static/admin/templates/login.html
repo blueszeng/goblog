@@ -1,0 +1,27 @@
+<div class="row">
+    <div class="small-12 columns">
+        <h2>Admin Login</h2>
+    </div>
+</div>
+<form class="login-form" method="get" action="http://goblog-geoct826.c9.io/_ah/login">
+    <div class="row">
+        <div class="small-12 columns">
+            <label>Email
+                <input name="email" type="email" value="test@example.com" id="email"/>
+            </label>
+        </div>
+        <div class="small-12 columns">
+            <label>
+                <input name="admin" type="checkbox" value="True" id="admin"/>
+                Sign in as Administrator
+            </label>
+        </div>
+        <div class="small-6 columns">
+            <input class="button expand" name="action" value="Login" type="submit" id="submit-login" />
+        </div>
+        <div class="small-6 columns">
+            <input class="button expand" name="action" value="Logout" type="submit" id="submit-logout" />
+        </div>
+        <input name="continue" type="hidden" value="http://goblog-geoct826.c9.io:80/admin/"/>
+    </div>
+</form>
