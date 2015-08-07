@@ -68,6 +68,8 @@ func loadCurrentUser(c appengine.Context) (User, error) {
 			Role: "Guest",
 		}
 	} else {
+		log.Println(u.ID)
+	
 		q := datastore.NewQuery("UserTable").
 			Filter("Email =", u.Email).
 			Limit(1)
@@ -94,6 +96,10 @@ func loadCurrentUser(c appengine.Context) (User, error) {
 			currentUser.ActiveFlag = true
 		} else if currentUser.Email == u.Email && currentUser.Email != ""{
 			currentUser.Role = "KnownUser"
+		} else if currentUser.UID == "" {
+			currentUser.Email = u.Email
+			currentUser.ActiveFlag = true
+			currentUser.Role = "Unregistered"
 		} else {
 			currentUser.Email = u.Email
 			currentUser.Role = "UnknownUser"
@@ -104,6 +110,7 @@ func loadCurrentUser(c appengine.Context) (User, error) {
 	currentUser.LoginURL, _ = user.LoginURL(c, "/admin/")
 	currentUser.LogoutURL, _ = user.LogoutURL(c, "/admin/")
 
+	
 	return currentUser, nil
 }	
 
@@ -282,7 +289,7 @@ func UserPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-    if (userCurrent.UID == "") {
+    if (userCurrent.Role == "") {
 		log.Println("POST /api/users: error unauthorized access")
     	unauthorized(w, r)
  		return
@@ -299,34 +306,49 @@ func UserPost(w http.ResponseWriter, r *http.Request) {
 	var userSalt string
 	var userCreate time.Time
 	var userName string
+	var userID string
+	
+	hasUserInfo := true
 	
 	if len(userPost.Email) == 0 {
-		log.Println("POST /api/users: no email in request body")
 		userEdited = userCurrent
-	} else {
-		userEdited, _ = findUser(c, userPost.Email)
+	
+		log.Println("POST /api/users: editing user", userEdited.Email)
+
+	} else {		
 		
+		if userPost.Email != userCurrent.Email {
+			if userCurrent.Role != "SiteAdmin" {
+				log.Println("POST /api/users: unauthorized user access by", userCurrent.Role, userCurrent.Email)
+				log.Println("POST /api/users: unauthorized editing of", userPost.Email)
+				forbidden(w, r)
+				return
+			}
+
+			userEdited, _ = findUser(c, userPost.Email)
+		} else {
+			userEdited = userCurrent
+		}
+				
 		if userEdited.Email == "" {
-			log.Println("POST /api/users: user not found", userPost.Email)
-			notFound(w, r)
-			return
+			hasUserInfo = false
 		}
 	}
 	
-	if (userEdited.Email != "") && (userOld.ActiveFlag == false) {
-		log.Println("POST /api/users: error user deactivated", userOld.Email)
+	if userEdited.ActiveFlag == false {
+		log.Println("POST /api/users: error user deactivated", userEdited.Email)
 		forbidden(w, r)
 		return
 	}
 		
-	if (userEdited.Salt == "") {
+	if userEdited.Salt == "" && hasUserInfo {
 		userSalt = string(base64.URLEncoding.EncodeToString(generateSalt([]byte(u.Email))))
 		userCreate = time.Now()
 		userName = userPost.DisplayName
 	
 	} else {
-		userSalt = userOld.Salt
-		userCreate = userOld.CreateDate
+		userSalt = userEdited.Salt
+		userCreate = userEdited.CreateDate
 		
 		if len(userPost.DisplayName) == 0 {
 			userName = userOld.DisplayName
@@ -335,13 +357,15 @@ func UserPost(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	
-	hashID := sha1.New()
-	io.WriteString(hashID, string(u.ID) + userSalt)
+	if hasUserInfo {
+		hashID := sha1.New()
+		io.WriteString(hashID, string(u.ID) + userSalt)
 
-	userID := base64.URLEncoding.EncodeToString(hashID.Sum(nil)) 
+		userID := base64.URLEncoding.EncodeToString(hashID.Sum(nil)) 
+		
+		userID = strings.ToLower(strings.TrimRight(userID, "="))	
+	}
 	
-	userID = strings.ToLower(strings.TrimRight(userID, "="))
 	
 	if (userOld.UID != "" && userOld.UID != userID) {
 		unauthorized(w, r)
