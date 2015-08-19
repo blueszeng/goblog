@@ -6,11 +6,13 @@ blogAdminControllers.service('UserService', [
   var currentUser = []
 
   var getUser = function (){
-      return currentUser[0];
+	console.log("Get User")
+	return currentUser[0];
   };
 
   var saveUser = function(newObj) {
-      currentUser.push(newObj);
+	console.log("Save User")
+	currentUser.push(newObj);
   };
   
   return {
@@ -20,44 +22,40 @@ blogAdminControllers.service('UserService', [
 
 }]);
 
-blogAdminControllers.controller('AdminHeaderCtrl', ['$scope', '$http', '$timeout', '$state', 'UserService',
-	function($scope, $http, $timeout, $state, UserService) {
+blogAdminControllers.controller('AdminHeaderCtrl', ['$rootScope', '$scope', '$http', '$timeout', '$state', 'UserService',
+	function($rootScope, $scope, $http, $timeout, $state, UserService) {
 
 	$http.get('/api/users').success(function(data) {
 		$timeout(function() {
 			$scope.user = data;
-			UserService.saveUser(data);
 		}, 0);
+		UserService.saveUser(data);
+		$rootScope.$broadcast('scopeChanged', "root.home")
 	});
 
-	$scope.$on('scopeChanged', function() {
-		$scope.currentState = $state.current.name
-		console.log($scope.currentState)
-	});
+
 }]);
 
 blogAdminControllers.controller('AdminHomeCtrl', ['$rootScope', '$scope', '$http', '$state', '$timeout', '$sce', 'UserService',
 	function($rootScope, $scope, $http, $state, $timeout, $sce, UserService) {
 
-
-	$timeout(function() {
-		$scope.user = UserService.getUser();
-		$scope.loginURL = $sce.trustAsResourceUrl($scope.user.loginURL);
-	}, 600);
+	$scope.user = UserService.getUser();
 
 	$scope.$watch('user', function() {
 		if (angular.isUndefined($scope.user)) {
-			$timeout(function() {
-				$scope.user = UserService.getUser();
-				if($scope.user["displayName"] == "" && $scope.user["role"] == "SiteAdmin") {
-					console.log("New Site Admin")
-					$state.go('root.useredit')
-				}
-			}, 600);
+		} else {
+			if($scope.user["displayName"] == "" && $scope.user["role"] != "Guest") {
+				console.log("No Name")
+				$state.go('root.useredit')
+			}
 		}
 	});
    
-	$rootScope.$broadcast('scopeChanged', "root.home")
+	$scope.$on('scopeChanged', function() {
+		$scope.user = UserService.getUser();
+		$scope.currentState = $state.current.name
+		console.log($scope.currentState)
+	});
 }]);
 
 blogAdminControllers.controller('UsersListCtrl', ['$rootScope', '$scope', '$http', '$state', '$timeout', 'UserService',
@@ -68,6 +66,8 @@ blogAdminControllers.controller('UsersListCtrl', ['$rootScope', '$scope', '$http
 	$scope.$watch('user', function() {
 		if (angular.isUndefined($scope.user)) {
 			$state.go('root.home')	   	
+		} else if ($scope.user["role"] == "New") {
+			$state.go('root.useredit')
 		} else if ($scope.user["role"] != "SiteAdmin") {
 			$state.go('root.home')
 		}

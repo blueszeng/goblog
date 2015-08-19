@@ -28,7 +28,7 @@
 </div>
 
 
-<div ng-if="user.role == 'UnknownUser'" class="row">
+<div ng-if="user.role == 'Unregistered'" class="row">
   <div class="row">
     <div class="large-5 large-centered medium-6 medium-centered small-11 small-centered columns panel">
       <h3>You are not authorized</h3>
@@ -45,8 +45,8 @@
 <div ng-if="user.role == 'KnownUser'" class="row">
   <div class="row">
     <div class="large-5 large-centered medium-6 medium-centered small-11 small-centered columns panel">
-      <h3>Sorry, {{user.displayName}}</h3>
-      <h4>You are not authorized.</h4>
+      <h3>Welcome {{user.displayName}}</h3>
+      <h4></h4>
       <br/>
       <div class="button-container centered">
         <a href="{{user.logoutURL}}" class="button">Logout</a>

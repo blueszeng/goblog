@@ -23,14 +23,14 @@
 		    	<li class="has-form"><a href="{{user.loginURL}}" class="button">Login</a></li>
 			</div>
 
-			<div ng-if="user.role == 'UnknownUser'">
+			<div ng-if="user.role == 'Unregistered'">
 				<li><a>Sorry, not allowed</a></li>
 		    	<li class="has-form"><a href="{{user.logoutURL}}" class="button">Logout</a></li>
 			</div>
 
 			<div ng-if="user.role == 'KnownUser'">
-				<li><a>Sorry, not allowed</a></li>
-		    	<li class="has-form"><a href="{{user.logoutURL}}" class="button">Logout</a></li>
+			    <li><a ui-sref="root.useredit">Hi {{user.displayName}}&nbsp;<i class="fa fa-pencil fa-fw"></i></a></li>
+			    <li class="has-form"><a href="{{user.logoutURL}}" class="button">Logout</a></li>
 			</div>			
 
         </ul>
@@ -63,7 +63,7 @@
 		</div>
 
 		<div ng-if="user.role == 'KnownUser'">
-			<li><a>Sorry, not allowed</a></li>
+		    <li><a ui-sref="root.useredit">Hi {{user.displayName}}&nbsp;<i class="fa fa-pencil fa-fw"></i></a></li>
 	    	<li class="has-form"><a href="{{user.logoutURL}}" class="button">Logout</a></li>
 		</div>			
 	</ul>

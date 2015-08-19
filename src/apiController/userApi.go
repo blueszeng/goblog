@@ -59,10 +59,12 @@ func loadCurrentUser(c appengine.Context) (User, error) {
     u := user.Current(c)
 	
 	var currentUser User
+	
+	log.Println("looking for user", u)	
 
 	if u == nil {
 		currentUser = User{
-			Email: "",
+			Email: "no email",
 			DisplayName: "",
 			ActiveFlag: false,
 			Role: "Guest",
@@ -75,7 +77,7 @@ func loadCurrentUser(c appengine.Context) (User, error) {
 			Limit(1)
 			
 		var allUsers []User
-	
+		
 		if _, err := q.GetAll(c, &allUsers); err != nil {
 			return currentUser, err
 		}
@@ -86,8 +88,17 @@ func loadCurrentUser(c appengine.Context) (User, error) {
 			}
 		}
 	}
+
+	if currentUser.Email == "" {
+		currentUser.Email = u.Email
+	}
+
+	if user.IsAdmin(c) {
+		currentUser.Role = "SiteAdmin"
+		currentUser.ActiveFlag = true
+	}
 	
-	if currentUser.Role != "Guest" {
+	if currentUser.Role == "" {
 		if user.IsAdmin(c) {
 			currentUser.Role = "SiteAdmin"
 			if currentUser.Email == "" {
@@ -110,7 +121,6 @@ func loadCurrentUser(c appengine.Context) (User, error) {
 	currentUser.LoginURL, _ = user.LoginURL(c, "/admin/")
 	currentUser.LogoutURL, _ = user.LogoutURL(c, "/admin/")
 
-	
 	return currentUser, nil
 }	
 
@@ -143,6 +153,16 @@ func userSave(c appengine.Context, user User) (error) {
 	k := datastore.NewKey(c, "UserTable", user.UID, 0, nil)
 	
 	if _, err := datastore.Put(c, k, &user); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func userDelete(c appengine.Context, user User) (error) {
+	k := datastore.NewKey(c, "UserTable", user.UID, 0, nil)
+	
+	if err := datastore.Delete(c, k); err != nil {
 		return err
 	}
 
@@ -295,7 +315,7 @@ func UserPost(w http.ResponseWriter, r *http.Request) {
  		return
     }
 
-	var userPost, userEdited, userOld User
+	var userPost, userEdited User
 
 	if err := d.Decode(&userPost); err != nil {
 		log.Println("POST /api/users: error decoding user post", err)
@@ -307,78 +327,86 @@ func UserPost(w http.ResponseWriter, r *http.Request) {
 	var userCreate time.Time
 	var userName string
 	var userID string
+	var userRole string
 	
 	hasUserInfo := true
+	cleanupOldUser := false
 	
-	if len(userPost.Email) == 0 {
-		userEdited = userCurrent
-	
+	if len(userPost.Email) == 0 || userPost.Email == userCurrent.Email {
+		userEdited = userCurrent	
 		log.Println("POST /api/users: editing user", userEdited.Email)
+	} else {
+		userEdited, _ = findUser(c, userPost.Email)
 
-	} else {		
-		
-		if userPost.Email != userCurrent.Email {
-			if userCurrent.Role != "SiteAdmin" {
-				log.Println("POST /api/users: unauthorized user access by", userCurrent.Role, userCurrent.Email)
-				log.Println("POST /api/users: unauthorized editing of", userPost.Email)
-				forbidden(w, r)
-				return
-			}
-
-			userEdited, _ = findUser(c, userPost.Email)
-		} else {
-			userEdited = userCurrent
-		}
-				
 		if userEdited.Email == "" {
 			hasUserInfo = false
+			userEdited.Email = userPost.Email
+		}
+	}
+
+	currentHashID := sha1.New()
+	io.WriteString(currentHashID, string(u.ID) + userEdited.Salt)
+
+	currentUserID := base64.URLEncoding.EncodeToString(currentHashID.Sum(nil)) 	
+	currentUserID = strings.ToLower(strings.TrimRight(currentUserID, "="))	
+
+
+	if currentUserID != userEdited.UID {
+		if userCurrent.Role == "New" && userCurrent.Email == userEdited.Email {
+			cleanupOldUser = true
+			log.Println("POST /api/users: editing New user", userEdited.Email)			
+		} else if userCurrent.Role == "SiteAdmin" {
+			log.Println("POST /api/users: Admin editing user", userEdited.Email)
+		} else {
+			log.Println("POST /api/users: unauthorized user access by", userCurrent.Role, userCurrent.Email)
+			log.Println("POST /api/users: unauthorized editing of", userPost.Email)
+			forbidden(w, r)
+			return
 		}
 	}
 	
-	if userEdited.ActiveFlag == false {
+	if userEdited.ActiveFlag == false && hasUserInfo {
 		log.Println("POST /api/users: error user deactivated", userEdited.Email)
 		forbidden(w, r)
 		return
 	}
-		
-	if userEdited.Salt == "" && hasUserInfo {
+
+	if userEdited.Salt == "" || userEdited.Role == "New"{
 		userSalt = string(base64.URLEncoding.EncodeToString(generateSalt([]byte(u.Email))))
 		userCreate = time.Now()
 		userName = userPost.DisplayName
-	
+		
+		hashID := sha1.New()
+		io.WriteString(hashID, string(u.ID) + userSalt)
+
+		userID = base64.URLEncoding.EncodeToString(hashID.Sum(nil)) 	
+		userID = strings.ToLower(strings.TrimRight(userID, "="))
 	} else {
 		userSalt = userEdited.Salt
 		userCreate = userEdited.CreateDate
-		
+		userID = userEdited.UID
+
 		if len(userPost.DisplayName) == 0 {
-			userName = userOld.DisplayName
+			userName = userEdited.DisplayName
 		} else {
 			userName = userPost.DisplayName
 		}
 	}
 
-	if hasUserInfo {
-		hashID := sha1.New()
-		io.WriteString(hashID, string(u.ID) + userSalt)
-
-		userID := base64.URLEncoding.EncodeToString(hashID.Sum(nil)) 
-		
-		userID = strings.ToLower(strings.TrimRight(userID, "="))	
+	if !hasUserInfo {
+		userRole = "New"
+	} else {
+		userRole = "KnownUser"
 	}
 	
-	
-	if (userOld.UID != "" && userOld.UID != userID) {
-		unauthorized(w, r)
-		return
-	}
-
 	user := User {
 		UID: userID,
-		Email: u.Email,
+		Email: userEdited.Email,
 		Salt: userSalt,
 		DisplayName: userName,
 		CreateDate: userCreate,
 		ModifiedDate: time.Now(),
+		Role: userRole,
 		ActiveFlag: true}
 
 	if err := userSave(c, user); err != nil {
@@ -386,6 +414,15 @@ func UserPost(w http.ResponseWriter, r *http.Request) {
 		internalServerError(w, r)
 		return
 	}
+	
+	if cleanupOldUser{
+		if err := userDelete(c, userEdited); err != nil {
+			log.Println("Error deleting user: ", err)
+			internalServerError(w, r)
+			return
+		}
+	}
+	
 	
 	e.Encode(&user)
 }	
