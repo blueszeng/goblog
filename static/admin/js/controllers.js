@@ -6,12 +6,15 @@ blogAdminControllers.service('UserService', [
   var currentUser = []
 
   var getUser = function (){
-	console.log("Get User")
+	console.log("Retrieve User")
+	console.log(currentUser[0])
 	return currentUser[0];
   };
 
   var saveUser = function(newObj) {
-	console.log("Save User")
+	currentUser.splice(0)
+	//console.log(currentUser)
+	console.log("Store User")
 	currentUser.push(newObj);
   };
   
@@ -32,8 +35,12 @@ blogAdminControllers.controller('AdminHeaderCtrl', ['$rootScope', '$scope', '$ht
 		UserService.saveUser(data);
 		$rootScope.$broadcast('scopeChanged', "root.home")
 	});
-
-
+	
+	$scope.$on('scopeChanged', function() {
+		$scope.user = UserService.getUser();
+		$scope.currentState = $state.current.name
+		console.log($scope.currentState)
+	});	
 }]);
 
 blogAdminControllers.controller('AdminHomeCtrl', ['$rootScope', '$scope', '$http', '$state', '$timeout', '$sce', 'UserService',
@@ -42,12 +49,22 @@ blogAdminControllers.controller('AdminHomeCtrl', ['$rootScope', '$scope', '$http
 	$scope.user = UserService.getUser();
 
 	$scope.$watch('user', function() {
-		if (angular.isUndefined($scope.user)) {
-		} else {
-			if($scope.user["displayName"] == "" && $scope.user["role"] != "Guest") {
-				console.log("No Name")
-				$state.go('root.useredit')
+		if (!(angular.isUndefined($scope.user))) {
+			//console.log($scope.user)
+
+			if($scope.user["displayName"] == ""){
+				if ($scope.user["role"] == "SiteAdmin") {
+					console.log("New Admin")
+					$state.go('root.useredit')
+				} else if ($scope.user["role"] == "New") {
+					console.log("New User")
+					$state.go('root.useredit')
+				} else {
+					console.log("User Loaded")
+				}
 			}
+		} else {
+			console.log("Undefined User")
 		}
 	});
    
@@ -66,8 +83,6 @@ blogAdminControllers.controller('UsersListCtrl', ['$rootScope', '$scope', '$http
 	$scope.$watch('user', function() {
 		if (angular.isUndefined($scope.user)) {
 			$state.go('root.home')	   	
-		} else if ($scope.user["role"] == "New") {
-			$state.go('root.useredit')
 		} else if ($scope.user["role"] != "SiteAdmin") {
 			$state.go('root.home')
 		}
@@ -99,24 +114,28 @@ blogAdminControllers.controller('UserEditCtrl', ['$rootScope', '$scope', '$http'
 		}
 	});
 
-	$rootScope.$broadcast('scopeChanged', "root.home")
 	
 	$scope.update = function(user) {
-	 	$http.post('/api/users', user).success(function() {
+	 	$http.post('/api/users', user).success(function(data) {
 	        $timeout(function() {
-	        	$state.go('root.home', {}, {reload: true});
+				$scope.user = data;
 	        }, 100);
+			UserService.saveUser(data);
+			$rootScope.$broadcast('scopeChanged', "root.home")
+	        //$state.go('root.home', {}, {reload: true});			
+			$state.go('root.home')
 		})
 	};
-
+	
 	$scope.cancelEdit = function() {
 		$state.go('root.home')
 	}
 	
 	$scope.add = function(newUser) {
-	 	$http.post('/api/users', newUser).success(function() {
+	 	$http.post('/api/users', newUser).success(function(data) {
 	        $timeout(function() {
-	            	$state.go('^', {}, {reload: true});
+				$scope.user = data;
+	            $state.go('^', {}, {reload: true});
 	        }, 100);
 		})
 	};

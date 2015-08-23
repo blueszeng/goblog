@@ -89,12 +89,13 @@ func loadCurrentUser(c appengine.Context) (User, error) {
 		}
 	}
 
-	if currentUser.Email == "" {
+	if currentUser.Email == "" && currentUser.Role != "" {
 		currentUser.Email = u.Email
 	}
 
 	if user.IsAdmin(c) {
 		currentUser.Role = "SiteAdmin"
+		currentUser.Email = u.Email
 		currentUser.ActiveFlag = true
 	}
 	
@@ -208,6 +209,7 @@ func UserGet(w http.ResponseWriter, r *http.Request, userReqID string) {
 		
  	if userReqID == "" {
  		log.Println("GET /api/users: success lookup user", userCurrent.Email)
+		log.Println(userCurrent)		
 	    e.Encode(&userCurrent)
  	} else {
 		if userCurrent.Role != "SiteAdmin" {
@@ -245,6 +247,7 @@ func UserGet(w http.ResponseWriter, r *http.Request, userReqID string) {
 			}
 			
  			log.Println("GET /api/users/userReqID: success lookup user", user.Email)			
+			log.Println(user)
 			e.Encode(&user)
  		}
  	}
@@ -399,7 +402,7 @@ func UserPost(w http.ResponseWriter, r *http.Request) {
 		userRole = "KnownUser"
 	}
 	
-	user := User {
+	userUpdate := User {
 		UID: userID,
 		Email: userEdited.Email,
 		Salt: userSalt,
@@ -409,7 +412,7 @@ func UserPost(w http.ResponseWriter, r *http.Request) {
 		Role: userRole,
 		ActiveFlag: true}
 
-	if err := userSave(c, user); err != nil {
+	if err := userSave(c, userUpdate); err != nil {
 		log.Println("Error saving user: ", err)
 		internalServerError(w, r)
 		return
@@ -423,8 +426,10 @@ func UserPost(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	
+	userUpdate.LoginURL, _ = user.LoginURL(c, "/admin/")
+	userUpdate.LogoutURL, _ = user.LogoutURL(c, "/admin/")
 	
-	e.Encode(&user)
+	e.Encode(&userUpdate)
 }	
 
 func LoginPageHtml(w http.ResponseWriter, r *http.Request) {
