@@ -84,8 +84,8 @@
 		</div>
 		<div class="small-12 medium-6 columns">
 			<label>Authorized Authors
-				<div class="alert-box secondary" ng-repeat="(key, value) in blog.blogEmails track by $index">
-					{{blog.blogEmails[key]}} ({{blog.blogAuthors[key]}})
+				<div class="alert-box secondary" ng-repeat="author in blog.blogAuthors track by $index">
+					{{author.Email}} ({{author.Name}})
 					<a ng-click="deleteEmail($index)" class="close">&times;</a>
 				</div>
 			</label>

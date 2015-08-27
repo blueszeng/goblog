@@ -147,21 +147,15 @@ blogAdminControllers.controller('UserEditCtrl', ['$rootScope', '$scope', '$http'
 blogAdminControllers.controller('BlogsListCtrl', ['$rootScope', '$scope', '$http', '$state', '$timeout', 'UserService',
 	function($rootScope, $scope, $http, $state, $timeout, UserService) {
 
-	$scope.user = UserService.getUser()
-
-	$scope.$watch('user', function() {
-		if (angular.isUndefined($scope.user)) {
-			$state.go('root.home')	   	
-		} else if ($scope.user["role"] != "SiteAdmin") {
-			$state.go('root.home')
-		}
-	});
-	
 	$scope.blogLoad = function () {
 		$http.get('/api/blogs/all').success(function(data) {
-			$timeout(function() {
+			if (data.error == "No Blogs Found") {
+				console.log("No Blogs")
+				$scope.hasBlogs = false
+			} else {
+				$scope.hasBlogs = true
 				$scope.blogs = data
-			}, 0);
+			};
 		});
 	};
 	
@@ -192,13 +186,13 @@ blogAdminControllers.controller('BlogEditCtrl', ['$scope', '$http', '$stateParam
       	};
       	
       	$scope.deleteEmail = function (index) {
-        	$scope.blog.blogEmails.splice(index, 1);
+        	//$scope.blog.blogEmails.splice(index, 1);
         	$scope.blog.blogAuthors.splice(index, 1);
     	}
     	
     	$scope.addEmail = function (index) {
-    		$http.get('/api/users/' + $scope.newEmail).success(function(data) {
-        		$scope.blog.blogEmails.push($scope.newEmail);
+    		$http.get('/api/userlookup/' + $scope.newEmail).success(function(data) {
+        		//$scope.blog.blogEmails.push($scope.newEmail);
         		$scope.blog.blogAuthors.push(data);    			
     		})
     	}

@@ -20,14 +20,18 @@ type BlogIndex struct {
     ID	            string		`json:"id"`
     Name            string		`json:"blogName"`
     AuthorsID		[]string	`json:"-"`
-    AuthorsEmail	[]string	`json:"blogEmails"`
-    Authors         []string	`json:"blogAuthors"`
+    BlogAuthors     []Author	`json:"blogAuthors"`
     CommentsAllow   bool		`json:"commentsAllow"`
     CommentsReview  bool		`json:"commentsReview"`
     ActiveFlag      bool		`json:"active"`
 }
 
 type Blogs []BlogIndex
+
+type Author struct {
+	Name		string			`json:"Name"`
+	Email		string			`json:"Email"`
+}
 
 func stringInSlice(str string, list []string) bool {
 	for _, v := range list {
@@ -116,19 +120,19 @@ func BlogIndexPost(w http.ResponseWriter, r *http.Request) {
 		
 	var blogAuthorsID []string
 
-	for i, _ := range blogIndexPost.AuthorsEmail {
+	for i, _ := range blogIndexPost.BlogAuthors {
 	
-		email := blogIndexPost.AuthorsEmail[i]
-		user, err := findUser(c, email)
+		author := blogIndexPost.BlogAuthors[i]
+		user, err := findUser(c, author.Email)
 		
 		if err != nil || user.UID == "" {
-			log.Println("not saved", email)
+			log.Println("not saved", author.Email)
 		} else {
 	 		if !stringInSlice(user.UID, blogAuthorsID) {
-				log.Println("saved", email)
+				log.Println("saved", author.Email)
  				blogAuthorsID = append(blogAuthorsID, user.UID)
  			} else {
- 				log.Println("duplicate", email)
+ 				log.Println("duplicate", author.Email)
  			}
 		}
 	}
@@ -159,6 +163,10 @@ func BlogIndexPost(w http.ResponseWriter, r *http.Request) {
 func BlogsIndexGet(w http.ResponseWriter, r *http.Request, blogID string) {
 	c := appengine.NewContext(r)
 	e := json.NewEncoder(w)
+	
+	notFoundError := ErrorJson{
+		Message: "No Blogs Found",
+	}
 	
 	if user.IsAdmin(c) == false {
 		forbidden(w, r)
@@ -192,14 +200,21 @@ func BlogsIndexGet(w http.ResponseWriter, r *http.Request, blogID string) {
 					emailString = "Email Not Found"
 				}
 			
-        		blogsIndex[i].Authors = append(blogsIndex[i].Authors, nameString)
-        		blogsIndex[i].AuthorsEmail = append(blogsIndex[i].AuthorsEmail, emailString)
+				var author Author
+				author.Name = nameString
+				author.Email = emailString
+				
+        		blogsIndex[i].BlogAuthors = append(blogsIndex[i].BlogAuthors, author)
 			}
 		
 			//log.Println(blogsIndex[i].Authors)
 		}
 		
-		e.Encode(&blogsIndex)
+		if blogsIndex == nil {
+			e.Encode(&notFoundError)
+		} else {
+			e.Encode(&blogsIndex)			
+		}
 	} else {
 		blogIndex, err := blogIndexLoad(c, blogID)
 		
@@ -217,11 +232,13 @@ func BlogsIndexGet(w http.ResponseWriter, r *http.Request, blogID string) {
 				nameString = "Name Not Found"
 				emailString = "Email Not Found"
 			}
+			var author Author
+			author.Name = nameString
+			author.Email = emailString
 		
-    		blogIndex.Authors = append(blogIndex.Authors, nameString)
-    		blogIndex.AuthorsEmail = append(blogIndex.AuthorsEmail, emailString)
-		}		
+    		blogIndex.BlogAuthors = append(blogIndex.BlogAuthors, author)
+ 		}		
 		
-		e.Encode(&blogIndex)
+		e.Encode(&blogIndex)			
 	}
 }

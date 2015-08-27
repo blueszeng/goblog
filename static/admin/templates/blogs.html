@@ -4,7 +4,12 @@
 		<small>List of blogs</small></h2>
 		
 		<a ui-sref="root.blogs.edit" class="button">Add New</a>
-
+		
+		<div ng-if="!hasBlogs">
+			<div class="small-12 columns">
+				<h3>No blog has been found. Please add a new one.</h3>
+			</div>
+		</div>
 		<div ng-repeat="blog in blogs" class="panel">
 					<i ng-if="blog.active" class="fa fa-check green right"></i>
 					<i ng-if="!blog.active" class="fa fa-times red right"></i>
@@ -19,7 +24,7 @@
 				</div>
 				<div class="small-12 medium-7 large-6 columns">
 					<label>Authors:</label>
-					<label ng-repeat="author in blog.blogAuthors track by $index">{{author}}</label>
+					<label ng-repeat="author in blog.blogAuthors track by $index">{{author.Name}} {{author.Email}}</label>
 				</div>
 			</div>
 		</div>

@@ -12,6 +12,10 @@ import (
 	"github.com/gorilla/mux"
 	)
 	
+type ErrorJson struct {
+	Message 	string		`json:"error"`
+}
+
 func HoldOn(w http.ResponseWriter, r *http.Request) {
     c := appengine.NewContext(r)
     u := user.Current(c)
@@ -67,6 +71,7 @@ func ApiGetHandler(w http.ResponseWriter, r *http.Request) {
 	
 	switch view {
 		case "users": UserGet(w, r, key)
+		case "userlookup": UserLookupGet(w, r, key)
 		case "loginpage": LoginPageHtml(w, r)
 		case "blogs": BlogsIndexGet(w, r, key)
 		case "test": HoldOn(w, r)
