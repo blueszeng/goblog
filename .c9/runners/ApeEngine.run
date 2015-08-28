@@ -1,4 +1,0 @@
-{ 
-"cmd" : ["$HOME/go_appengine/dev_appserver.py", "$HOME/workspace/"], 
-"info" : "App Engine Started" 
-} 
