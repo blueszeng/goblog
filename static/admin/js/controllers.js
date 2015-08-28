@@ -50,8 +50,6 @@ blogAdminControllers.controller('AdminHomeCtrl', ['$rootScope', '$scope', '$http
 
 	$scope.$watch('user', function() {
 		if (!(angular.isUndefined($scope.user))) {
-			//console.log($scope.user)
-
 			if($scope.user["displayName"] == ""){
 				if ($scope.user["role"] == "SiteAdmin") {
 					console.log("New Admin")
@@ -152,9 +150,11 @@ blogAdminControllers.controller('BlogsListCtrl', ['$rootScope', '$scope', '$http
 			if (data.error == "No Blogs Found") {
 				console.log("No Blogs")
 				$scope.hasBlogs = false
+				$scope.loaded = true
 			} else {
 				$scope.hasBlogs = true
 				$scope.blogs = data
+				$scope.loaded = true
 			};
 		});
 	};
@@ -168,14 +168,24 @@ blogAdminControllers.controller('BlogEditCtrl', ['$scope', '$http', '$stateParam
 	function($scope, $http, $stateParams, $state, $timeout, $location, $anchorScroll) {
     	$scope.blogID = $stateParams.blogID;
 
-    	$http.get('/api/blogs/'+$scope.blogID).success(function(data) {
-    
-    		$scope.blog = data
-	    	$timeout(function() {
-	    		//$location.hash('blogEdit');
-	    		//$anchorScroll(); 
-	    	}, 100);
-    	});
+		if (!$scope.blogID) {
+			console.log("New Blog")
+	    	$http.get('/api/blogs/new').success(function(data) {
+	    		$scope.blog = data
+		    	$timeout(function() {
+		    		//$location.hash('blogEdit');
+		    		//$anchorScroll(); 
+		    	}, 100);
+	    	});			
+		} else {
+	    	$http.get('/api/blogs/'+$scope.blogID).success(function(data) {
+	    		$scope.blog = data
+		    	$timeout(function() {
+		    		//$location.hash('blogEdit');
+		    		//$anchorScroll(); 
+		    	}, 100);
+	    	});			
+		};
 
     	$scope.update = function(blog) {
 	     	$http.post('/api/blogs', blog).success(function() {
@@ -186,13 +196,11 @@ blogAdminControllers.controller('BlogEditCtrl', ['$scope', '$http', '$stateParam
       	};
       	
       	$scope.deleteEmail = function (index) {
-        	//$scope.blog.blogEmails.splice(index, 1);
         	$scope.blog.blogAuthors.splice(index, 1);
     	}
     	
     	$scope.addEmail = function (index) {
     		$http.get('/api/userlookup/' + $scope.newEmail).success(function(data) {
-        		//$scope.blog.blogEmails.push($scope.newEmail);
         		$scope.blog.blogAuthors.push(data);    			
     		})
     	}

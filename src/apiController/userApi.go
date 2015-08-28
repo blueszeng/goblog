@@ -495,9 +495,11 @@ func UserLookupGet(w http.ResponseWriter, r *http.Request, userEmail string) {
 		e.Encode(&notFoundError)
 	}
 
-	var userInfo Author
-	userInfo.Email = user.Email
-	userInfo.Name = user.DisplayName
+	userInfo := Author{
+		Name:  user.DisplayName,
+		Email: user.Email,
+	}
 
+	log.Println("GET /api/users/userlookup: success lookup user", user.Email)
 	e.Encode(&userInfo)
 }
