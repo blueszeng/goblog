@@ -24,6 +24,7 @@ type BlogIndex struct {
 	CommentsAllow  bool     `json:"commentsAllow"`
 	CommentsReview bool     `json:"commentsReview"`
 	ActiveFlag     bool     `json:"active"`
+	Position       int      `json:"position"`
 }
 
 type Blogs []BlogIndex
@@ -77,6 +78,26 @@ func blogIndexLoad(c appengine.Context, blogID string) (BlogIndex, error) {
 	return blog, nil
 }
 
+func blogIndexLastPosition(c appengine.Context) (int, error) {
+	q := datastore.NewQuery("BlogIndex").
+		Project("Position").
+		Order("-Position").Limit(1)
+
+	var blogs Blogs
+	_, err := q.GetAll(c, &blogs)
+
+	if err != nil {
+		return 0, err
+	}
+	log.Println(blogs)
+
+	if blogs == nil {
+		return 0, nil
+	} else {
+		return blogs[0].Position, nil
+	}
+}
+
 func BlogIndexPost(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
 	d := json.NewDecoder(r.Body)
@@ -113,7 +134,6 @@ func BlogIndexPost(w http.ResponseWriter, r *http.Request) {
 			notFound(w, r)
 			return
 		}
-
 		blogID = blogIndexFound.ID
 	}
 
@@ -140,6 +160,17 @@ func BlogIndexPost(w http.ResponseWriter, r *http.Request) {
 		blogAuthorsID = append(blogAuthorsID, author.UID)
 	}
 
+	if blogIndexPost.Position == 0 {
+		log.Println("No Position Passed")
+		lastPosition, err := blogIndexLastPosition(c)
+
+		if err != nil {
+			log.Println("Error getting last index", err)
+			internalServerError(w, r)
+		}
+		blogIndexPost.Position = lastPosition + 10
+	}
+
 	blogIndex := BlogIndex{
 		ID:             blogID,
 		Name:           blogIndexPost.Name,
@@ -147,6 +178,7 @@ func BlogIndexPost(w http.ResponseWriter, r *http.Request) {
 		CommentsAllow:  blogIndexPost.CommentsAllow,
 		CommentsReview: blogIndexPost.CommentsReview,
 		ActiveFlag:     blogIndexPost.ActiveFlag,
+		Position:       blogIndexPost.Position,
 	}
 
 	if err := blogIndexSave(c, blogIndex); err != nil {

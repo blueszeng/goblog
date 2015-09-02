@@ -14,7 +14,7 @@
 				<h3>No blog has been found. Please add a new one.</h3>
 			</div>
 		</div>
-		<div ng-repeat="blog in blogs" class="panel">
+		<div ng-repeat="blog in blogs | orderBy :'position'" class="panel">
 					<i ng-if="blog.active" class="fa fa-check green right"></i>
 					<i ng-if="!blog.active" class="fa fa-times red right"></i>
 					<a ui-sref="root.blogs.edit({blogID:blog.id})"><i class="fa fa-pencil fa-fw right"></i></a>
