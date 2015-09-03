@@ -98,6 +98,38 @@ func blogIndexLastPosition(c appengine.Context) (int, error) {
 	}
 }
 
+func blogIndexSetPosition(c appengine.Context, newPosition int, setBlog BlogIndex) error {
+	q := datastore.NewQuery("BlogIndex").
+		Filter("Position =", newPosition)
+
+	var blogs Blogs
+
+	_, err := q.GetAll(c, &blogs)
+
+	if err != nil {
+		return err
+	}
+
+	setBlog.Position = newPosition
+
+	if err1 := blogIndexSave(c, setBlog); err1 != nil {
+		return err1
+	}
+	log.Println("Blog Position setting", setBlog.ID, "to position", newPosition)
+
+	if blogs != nil {
+		for k, v := range blogs {
+			if v.Position == newPosition {
+				log.Println(blogs[k].ID, "has overlapping position")
+				if err2 := blogIndexSetPosition(c, blogs[k].Position+k+1, blogs[k]); err2 != nil {
+					log.Println("Error setting postion for ", blogs[k].ID, err2)
+				}
+			}
+		}
+	}
+	return nil
+}
+
 func BlogIndexPost(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
 	d := json.NewDecoder(r.Body)
@@ -160,6 +192,8 @@ func BlogIndexPost(w http.ResponseWriter, r *http.Request) {
 		blogAuthorsID = append(blogAuthorsID, author.UID)
 	}
 
+	setNewPosition := false
+
 	if blogIndexPost.Position == 0 {
 		log.Println("No Position Passed")
 		lastPosition, err := blogIndexLastPosition(c)
@@ -169,6 +203,8 @@ func BlogIndexPost(w http.ResponseWriter, r *http.Request) {
 			internalServerError(w, r)
 		}
 		blogIndexPost.Position = lastPosition + 10
+	} else if blogIndexPost.Position != blogIndexFound.Position {
+		setNewPosition = true
 	}
 
 	blogIndex := BlogIndex{
@@ -181,10 +217,18 @@ func BlogIndexPost(w http.ResponseWriter, r *http.Request) {
 		Position:       blogIndexPost.Position,
 	}
 
-	if err := blogIndexSave(c, blogIndex); err != nil {
-		log.Println("Error saving user: ", err)
-		internalServerError(w, r)
-		return
+	if setNewPosition {
+		if err := blogIndexSetPosition(c, blogIndexPost.Position, blogIndex); err != nil {
+			log.Println("Error saving user: ", err)
+			internalServerError(w, r)
+			return
+		}
+	} else {
+		if err := blogIndexSave(c, blogIndex); err != nil {
+			log.Println("Error saving user: ", err)
+			internalServerError(w, r)
+			return
+		}
 	}
 
 	e.Encode(&blogIndex)
