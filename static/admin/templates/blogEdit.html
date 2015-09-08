@@ -5,14 +5,14 @@
 </div>
 <form class="simple-form">
 	<div class="row">
-		<div class="small-12 columns">
+		<div class="small-12 columns"> <!-- blog title --->
 	      <label>Blog Title
 	        <input type="text" ng-model="blog.blogName" placeholder="{{blog.blogName}}" />
 	      </label>
 	    </div>
 	</div>
 	<div class="row">
-		<div class="small-12 medium-4 columns">
+		<div class="small-12 medium-4 columns">  <!-- blog active flag -->
 			<div class="row">
 				<div class="small-6 columns">
 					<label>Blog Active?</label>				
@@ -31,7 +31,7 @@
 				</div>
 			</div>
 		</div>	
-		<div class="small-12 medium-4 columns">
+		<div class="small-12 medium-4 columns">  <!-- blog comments flag -->
 			<div class="row">
 				<div class="small-6 columns">
 					<label>Allow Comments?</label>						
@@ -50,7 +50,7 @@
 				</div>
 			</div>
 		</div>			
-		<div class="small-12 medium-4 columns">
+		<div class="small-12 medium-4 columns">  <!-- comments review flag -->
 			<div class="row">
 				<div class="small-6 columns">
 					<label>Review Comments before Posting?</label>					
@@ -71,7 +71,25 @@
 		</div>
 	</div>
 	<div class="row">
-		<div class="small-12 medium-6 columns">
+		<div class="small-12 medium-6 columns">  <!-- blog sort method --> 
+			<label>Blog Post Sort Method
+	        <select ng-model="blog.sortMethod">
+	        	<option value="1">Posted Date (Newest on top)</option>
+	        	<option value="2">Posted Date (Oldest on top)</option>
+	        	<option value="3">Custom Position</option>
+	        </select>
+	     	</label>					
+		</div>
+		<div class="small-12 medium-6 columns">  <!-- blog positon move -->
+			<label>Blog Position, move above
+				<select ng-model="blog.position" ng-options="item.position as item.blogName for item in blogs | orderBy :'position'">	
+				<option value="">Move to Bottom</option>				
+	        </select>
+	     	</label>					
+		</div>
+	</div>
+	<div class="row">
+		<div class="small-12 medium-6 columns">  <!-- add new authors -->
 			<label>Add New Authors</label>
 			<div class="row collapse">
 				<div class="small-9 columns">
@@ -82,7 +100,7 @@
 				</div>
 			</div>
 		</div>
-		<div class="small-12 medium-6 columns">
+		<div class="small-12 medium-6 columns">  <!-- current authors -->
 			<label>Authors
 				<div ng-if="blog.blogAuthors.length" class="alert-box secondary" ng-repeat="author in blog.blogAuthors track by $index">
 					{{author.Email}} ({{author.Name}})

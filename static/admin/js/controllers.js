@@ -3,9 +3,9 @@ var blogAdminControllers = angular.module('blogAdminControllers', []);
 blogAdminControllers.service('UserService', [
 	function() {
 		
-  var currentUser = []
+	var currentUser = []
 
-  var getUser = function (){
+  var getUser = function () {
 	console.log("Retrieve User")
 	console.log(currentUser[0])
 	return currentUser[0];
@@ -22,8 +22,28 @@ blogAdminControllers.service('UserService', [
     saveUser: saveUser,
     getUser: getUser
   };
-
 }]);
+
+blogAdminControllers.service('BlogIndexService', [
+	function() {
+		
+		var blogsIndex = []
+		
+		var saveBlogs = function(newObj) {
+			blogsIndex.splice(0)
+			console.log(newObj)
+			blogsIndex.push(newObj);
+		};
+		
+		var getBlogs = function() {
+			return blogsIndex[0];
+		};
+		
+		return {
+			saveBlogs: saveBlogs,
+			getBlogs: getBlogs
+		};
+	}]);
 
 blogAdminControllers.controller('AdminHeaderCtrl', ['$rootScope', '$scope', '$http', '$timeout', '$state', 'UserService',
 	function($rootScope, $scope, $http, $timeout, $state, UserService) {
@@ -142,8 +162,8 @@ blogAdminControllers.controller('UserEditCtrl', ['$rootScope', '$scope', '$http'
 }]);
 	
 		
-blogAdminControllers.controller('BlogsListCtrl', ['$rootScope', '$scope', '$http', '$state', '$timeout', 'UserService',
-	function($rootScope, $scope, $http, $state, $timeout, UserService) {
+blogAdminControllers.controller('BlogsListCtrl', ['$rootScope', '$scope', '$http', '$state', '$timeout', 'UserService', 'BlogIndexService',
+	function($rootScope, $scope, $http, $state, $timeout, UserService, BlogIndexService) {
 
 	$scope.blogLoad = function () {
 		$http.get('/api/blogs/all').success(function(data) {
@@ -154,6 +174,7 @@ blogAdminControllers.controller('BlogsListCtrl', ['$rootScope', '$scope', '$http
 			} else {
 				$scope.hasBlogs = true
 				$scope.blogs = data
+				BlogIndexService.saveBlogs(data);
 				$scope.loaded = true
 			};
 		});
@@ -164,26 +185,28 @@ blogAdminControllers.controller('BlogsListCtrl', ['$rootScope', '$scope', '$http
 	$rootScope.$broadcast('scopeChanged', "root.blogs")
 }]);
 
-blogAdminControllers.controller('BlogEditCtrl', ['$scope', '$http', '$stateParams', '$state', '$timeout', '$location', '$anchorScroll',
-	function($scope, $http, $stateParams, $state, $timeout, $location, $anchorScroll) {
+blogAdminControllers.controller('BlogEditCtrl', ['$scope', '$http', '$stateParams', '$state', '$timeout', '$location', '$anchorScroll', 'BlogIndexService',
+	function($scope, $http, $stateParams, $state, $timeout, $location, $anchorScroll, BlogIndexService) {
     	$scope.blogID = $stateParams.blogID;
+		$scope.blogs = BlogIndexService.getBlogs();
 
 		if (!$scope.blogID) {
 			console.log("New Blog")
 	    	$http.get('/api/blogs/new').success(function(data) {
 	    		$scope.blog = data
-		    	$timeout(function() {
+				
+		    	//$timeout(function() {
 		    		//$location.hash('blogEdit');
 		    		//$anchorScroll(); 
-		    	}, 100);
+		    	//}, 100);
 	    	});			
 		} else {
 	    	$http.get('/api/blogs/'+$scope.blogID).success(function(data) {
 	    		$scope.blog = data
-		    	$timeout(function() {
+		    	//$timeout(function() {
 		    		//$location.hash('blogEdit');
 		    		//$anchorScroll(); 
-		    	}, 100);
+		    	//}, 100);
 	    	});			
 		};
 

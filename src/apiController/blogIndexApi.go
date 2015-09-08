@@ -7,6 +7,7 @@ import (
 	//"sort"
 	"log"
 	"net/http"
+	//"strconv"
 	//"html/template"
 	"appengine"
 	"appengine/datastore"
@@ -25,6 +26,7 @@ type BlogIndex struct {
 	CommentsReview bool     `json:"commentsReview"`
 	ActiveFlag     bool     `json:"active"`
 	Position       int      `json:"position"`
+	SortMethod     string   `json:"sortMethod"`
 }
 
 type Blogs []BlogIndex
@@ -207,6 +209,14 @@ func BlogIndexPost(w http.ResponseWriter, r *http.Request) {
 		setNewPosition = true
 	}
 
+	if blogIndexPost.SortMethod == "" {
+		if blogIndexFound.SortMethod == "" {
+			blogIndexPost.SortMethod = "1"
+		} else {
+			blogIndexPost.SortMethod = blogIndexFound.SortMethod
+		}
+	}
+
 	blogIndex := BlogIndex{
 		ID:             blogID,
 		Name:           blogIndexPost.Name,
@@ -215,6 +225,7 @@ func BlogIndexPost(w http.ResponseWriter, r *http.Request) {
 		CommentsReview: blogIndexPost.CommentsReview,
 		ActiveFlag:     blogIndexPost.ActiveFlag,
 		Position:       blogIndexPost.Position,
+		SortMethod:     blogIndexPost.SortMethod,
 	}
 
 	if setNewPosition {
@@ -302,6 +313,7 @@ func BlogsIndexGet(w http.ResponseWriter, r *http.Request, blogID string) {
 		}
 
 		blog.BlogAuthors = append(blog.BlogAuthors, author)
+		blog.SortMethod = "1"
 		e.Encode(&blog)
 	} else {
 		log.Println("BlogID = ", blogID)
