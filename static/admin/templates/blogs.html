@@ -1,26 +1,29 @@
 <div class="row">
-	<div class="large-12 columns">
-		<h2>Blogs<br>
-		<small>List of blogs</small></h2>
-		
-		<a ui-sref="root.blogs.edit" class="button">Add New</a>
-		<div ng-hide="loaded">
-			<div class="small-12 columns">
-				<h4>Loading... <i class="fa fa-spinner fa-pulse"></i></h4>
-			</div>
+	<div class="small-12 columns">
+		<h2>Blog Management<br>
+		<small>List of blogs</small>
+		<a ui-sref="root.blogs.edit" class="button small round right">Add New</a></h2>
+	</div>
+</div>
+<div class="row">
+	<div ng-hide="loaded">
+		<div class="small-12 columns">
+			<h4>Loading... <i class="fa fa-spinner fa-pulse"></i></h4>
 		</div>
-		<div ng-if="!hasBlogs" ng-show="loaded">
-			<div class="small-12 columns">
-				<h3>No blog has been found. Please add a new one.</h3>
-			</div>
+	</div>
+	<div ng-if="!hasBlogs" ng-show="loaded">
+		<div class="small-12 columns">
+			<h3>No blog has been found. Please add a new one.</h3>
 		</div>
+	</div>
+	<div class="small-12 columns">
 		<div ng-repeat="blog in blogs | orderBy :'position'" class="panel">
-					<i ng-if="blog.active" class="fa fa-check green right"></i>
-					<i ng-if="!blog.active" class="fa fa-times red right"></i>
-					<a ui-sref="root.blogs.edit({blogID:blog.id})"><i class="fa fa-pencil fa-fw right"></i></a>
+			<a ui-sref="root.blogs.edit({blogID:blog.id})"><i class="fa fa-pencil fa-fw right"></i></a>
 			<div class="row">
 				<div class="small-9 medium-4 large-5 columns">
-					{{blog.blogName}}
+					<i ng-if="blog.active" class="fa fa-toggle-on green"></i>
+					<i ng-if="!blog.active" class="fa fa-toggle-off red"></i>
+					<a ng-click="openBlog(blog)">{{blog.blogName}}</a>
 					<label ng-if="blog.commentsAllow">Comments: Allow<ng-if="blog.commentsReview">, Review Required</ng-if></label>
 					<label ng-if="!blog.commentsAllow">Comments: Off</label>
 					<label ng-if="blog.sortMethod=='1'">Display: Newest First</label>

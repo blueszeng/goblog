@@ -36,15 +36,6 @@ type Author struct {
 	Email string `json:"Email"`
 }
 
-func stringInSlice(str string, list []string) bool {
-	for _, v := range list {
-		if v == str {
-			return true
-		}
-	}
-	return false
-}
-
 func blogIndexSave(c appengine.Context, blog BlogIndex) error {
 	k := datastore.NewKey(c, "BlogIndex", blog.ID, 0, nil)
 
@@ -91,7 +82,6 @@ func blogIndexLastPosition(c appengine.Context) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	log.Println(blogs)
 
 	if blogs == nil {
 		return 0, nil
@@ -117,7 +107,8 @@ func blogIndexSetPosition(c appengine.Context, newPosition int, setBlog BlogInde
 	if err1 := blogIndexSave(c, setBlog); err1 != nil {
 		return err1
 	}
-	log.Println("Blog Position setting", setBlog.ID, "to position", newPosition)
+
+	log.Println("POST /api/blogs: Position set", setBlog.ID, "to position", newPosition)
 
 	if blogs != nil {
 		for k, v := range blogs {
@@ -143,9 +134,10 @@ func BlogIndexPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	author, err := loadCurrentUser(c)
+	log.Println("POST /api/blogs: entered by", author.Role, author.Email)
 
 	if err != nil {
-		log.Println("No User Found: ", err)
+		log.Println("POST /api/users: load user error", err)
 		notFound(w, r)
 		return
 	}
@@ -321,6 +313,7 @@ func BlogsIndexGet(w http.ResponseWriter, r *http.Request, blogID string) {
 
 		if err != nil {
 			log.Println("GET /api/blogs error", err)
+
 		}
 
 		namesID := blogIndex.AuthorsID
@@ -341,6 +334,10 @@ func BlogsIndexGet(w http.ResponseWriter, r *http.Request, blogID string) {
 			blogIndex.BlogAuthors = append(blogIndex.BlogAuthors, author)
 		}
 
-		e.Encode(&blogIndex)
+		if blogIndex.ID != blogID {
+			e.Encode(&notFoundError)
+		} else {
+			e.Encode(&blogIndex)
+		}
 	}
 }

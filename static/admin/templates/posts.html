@@ -1,0 +1,58 @@
+<div class="row">
+	<div ng-show="blogLoaded" class="small-12 columns">	
+		<h2>Post Management<a ui-sref="root.blogs" ui-sref-opts="{reload: false}" class="button tiny round secondary right"><i class="fa fa-chevron-left"></i></a></h2>
+		<h3>Blog: {{blog.blogName}}<div ng-if="!blog.active"><small>  (inactive)</small></div></h3>
+		<div class="row">
+			<div class="small-6 columns">
+				<div ng-if="blog.commentsAllow">Comments: Allow<ng-if="blog.commentsReview">, Review Required</ng-if></div>
+				<div ng-if="!blog.commentsAllow">Comments: Off</div>
+			</div>
+			<div class="small-6 columns left">
+				<div ng-if="blog.sortMethod=='1'">Display: Newest Post on Top</div>
+				<div ng-if="blog.sortMethod=='2'">Display: Oldest Post on Top</div>
+				<div ng-if="blog.sortMethod=='3'">Display: Custom Order</div>					
+			</div>
+		</div>
+		<h2><small>List of posts</small>
+		<a ui-sref="root.posts.edit" class="button small round right">Add New</a></h2>
+	</div>
+</div>
+<div class="row">
+	<div ng-hide="loaded">
+		<div class="small-12 columns">
+			<h4>Loading... <i class="fa fa-spinner fa-pulse"></i></h4>
+		</div>
+	</div>
+	<div ng-if="!hasPosts" ng-show="loaded">
+		<div class="small-12 columns">
+			<h3>No post has been found. Please add a new one.</h3>
+		</div>
+	</div>
+
+	<div ng-repeat="post in posts | orderBy :sort" class="panel">	
+		<a ui-sref="root.posts.edit({postID:post.id})"><i class="fa fa-pencil fa-fw right"></i></a>
+		<div class="row">
+			<div class="small-9 medium-6 large-6 columns">
+				<div ng-if="post.active">
+					<i class="fa fa-toggle-on green"></i>
+					<i ng-if="post.displayed" class="fa fa-eye green"></i>
+					<i ng-if="!post.displayed" class="fa fa-eye-slash red"></i>
+					{{post.postName}}
+				</div>
+				<div ng-if="!post.active">
+					<i class="fa fa-toggle-off red"></i>
+					{{post.postName}}
+				</div>				
+				<label>Created Date: {{ post.createdDate | date:'medium'}}</label>
+				<label>Author: {{post.postAuthor.Name}} {{post.postAuthor.Email}}</label>
+			</div>
+			<div class="small-12 medium-6 large-6 columns">
+				<label>Post Date: {{post.postDate |date:"mediumDate"}}</label>
+				<div ng-if="!post.stopFlag"><label>Stop Date: No Stop Date</label></div>
+				<div ng-if="post.stopFlag"><label>Stop Date: {{post.stopDate |date:"mediumDate"}}</label></div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<div ui-view="subcontainer" autoscroll></div>

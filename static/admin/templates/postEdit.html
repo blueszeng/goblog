@@ -1,0 +1,89 @@
+<div class="row" id="postEdit">
+	<div class="small-12 columns">
+		<h2>Edit Post</h2>
+	</div>
+</div>
+<form class="simple-form">
+	<div class="row">
+		<div class="small-12 columns"> <!-- blog title --->
+	      <label>Post Title
+	        <input type="text" ng-model="post.postName" placeholder="{{post.postName}}" />
+	      </label>
+	    </div>
+	</div>
+	<div class="row">
+		<div class="small-12 medium-4 columns">  <!-- blog active flag -->
+			<div class="row">
+				<div class="small-6 columns">
+					<label>Post Active?</label>				
+				</div>
+				<div class="small-6 columns">
+					<div class="hero-box">
+						<label for="active" class="switch-light switch-android">
+							<input id="active" ng-model="post.active" type="checkbox" />
+							<span>
+								<span>No</span>
+								<span>Yes</span>
+							</span>
+							<a></a>
+						</label>
+					</div>				
+				</div>
+			</div>
+		</div>	
+		<div class="small-12 medium-4 columns">  <!-- blog active flag -->
+			<div class="row">
+				<div class="small-6 columns">
+					<label>Stop Date Active?</label>				
+				</div>
+				<div class="small-6 columns">
+					<div class="hero-box">
+						<label for="stopFlag" class="switch-light switch-android">
+							<input id="stopFlag" ng-model="post.stopFlag" type="checkbox" />
+							<span>
+								<span>No</span>
+								<span>Yes</span>
+							</span>
+							<a></a>
+						</label>
+					</div>				
+				</div>
+			</div>
+		</div>	
+	</div>
+	<div class="row">
+		<div class="small-2 columns">
+			<label for="startDate">Post Date</label>
+		</div>
+		<div class="small-4 columns">
+			<div class="row date collapse" id="startDate">
+				<div class="small-12 columns">
+					<input type="text" ng-model="post.postDateStr" datepicker='' required>
+				</div>
+			</div>
+		</div>
+		<div class="small-2 columns">
+			<label for="stopDate">Stop Date</label>
+		</div>
+		<div class="small-4 columns">
+			<div class="row date collapse" id="stopDate">
+				<div class="small-12 columns">
+					<input type="text" ng-model="post.stopDateStr" datepicker='' required>
+				</div>
+			</div>
+		</div>		
+	</div>
+    <div class="row">
+    	<div class="small-12 columns">
+    		<input type="hidden" ng-model="post.id" value="{{post.id}}" />
+    		<div class="row">
+    			<div class="small-6 columns">
+ 	    			<input class="button success expand" type="submit" ng-click="update(post)" value="Save" />				
+ 				</div>
+    			<div class="small-6 columns">
+ 					<input class="button alert expand" ng-click="cancelEdit()" value="Cancel" />
+ 				</div>
+    		</div>
+    	</div>
+    </div>
+</form>

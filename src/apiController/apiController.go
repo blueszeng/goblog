@@ -40,9 +40,19 @@ func internalServerError(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
+func stringInSlice(str string, list []string) bool {
+	for _, v := range list {
+		if v == str {
+			return true
+		}
+	}
+	return false
+}
+
 func ApiGetHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	view := strings.ToLower(vars["view"])
+	parent := strings.ToLower(vars["parent"])
 	key := strings.ToLower(vars["key"])
 
 	log.Println("API GET:", view, "With Key:", key)
@@ -61,6 +71,9 @@ func ApiGetHandler(w http.ResponseWriter, r *http.Request) {
 		} else {
 			BlogsIndexGet(w, r, key)
 		}
+	case "posts":
+		log.Println("view = posts")
+		PostsIndexGet(w, r, parent, key)
 	default:
 		log.Println("view not found")
 		notFound(w, r)
@@ -70,6 +83,7 @@ func ApiGetHandler(w http.ResponseWriter, r *http.Request) {
 func ApiPostHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	view := strings.ToLower(vars["view"])
+	key := strings.ToLower(vars["key"])
 
 	log.Println("API POST:", view)
 
@@ -78,6 +92,9 @@ func ApiPostHandler(w http.ResponseWriter, r *http.Request) {
 		UserPost(w, r)
 	case "blogs":
 		BlogIndexPost(w, r)
+	case "posts":
+		log.Println("view = posts")
+		PostIndexPost(w, r, key)
 	default:
 		notFound(w, r)
 	}

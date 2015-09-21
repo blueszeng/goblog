@@ -3,49 +3,48 @@
 package app
 
 import (
-    "fmt"
-    "log"
-    "net/http"
-    "github.com/gorilla/mux"
-    "apiController"
-    )
-
+	"apiController"
+	"fmt"
+	"github.com/gorilla/mux"
+	"log"
+	"net/http"
+)
 
 func notFound(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "", 404)
-    fmt.Fprintf(w, "Hmm... can't seem to find the page you were looking for.")
+	fmt.Fprintf(w, "Hmm... can't seem to find the page you were looking for.")
 	return
 }
 
 func index(w http.ResponseWriter, r *http.Request) {
-    log.Println("Loading file")
-    http.Handle("/",http.FileServer(http.Dir("static")))
+	log.Println("Loading file")
+	http.Handle("/", http.FileServer(http.Dir("static")))
 }
 
 func init() {
-    r := mux.NewRouter()
-    
-    apiGet := r.PathPrefix("/api").Methods("GET").Subrouter()
-    apiGet.HandleFunc("/{view}", apiController.ApiGetHandler)
-    apiGet.HandleFunc("/{view}/{key}", apiController.ApiGetHandler)    
+	r := mux.NewRouter()
 
-    apiPost := r.PathPrefix("/api").Methods("POST").Subrouter()
-    apiPost.HandleFunc("/{view}", apiController.ApiPostHandler)
-    apiPost.HandleFunc("/{view}/{key}", apiController.ApiPostHandler)    
+	apiGet := r.PathPrefix("/api").Methods("GET").Subrouter()
+	apiGet.HandleFunc("/{view}", apiController.ApiGetHandler)
+	apiGet.HandleFunc("/{view}/{key}", apiController.ApiGetHandler)
+	apiGet.HandleFunc("/{view}/{parent}/{key}", apiController.ApiGetHandler)
 
-    apiDelete := r.PathPrefix("/api").Methods("DELETE").Subrouter()
-    apiDelete.HandleFunc("/{view}/{key}", apiController.ApiDeleteHandler)    
+	apiPost := r.PathPrefix("/api").Methods("POST").Subrouter()
+	apiPost.HandleFunc("/{view}", apiController.ApiPostHandler)
+	apiPost.HandleFunc("/{view}/{key}", apiController.ApiPostHandler)
 
-    r.PathPrefix("/admin/").Handler(http.StripPrefix("/admin/", http.FileServer(http.Dir("./static/admin"))))
-    r.PathPrefix("/admin").Handler(http.RedirectHandler("/admin/", 301))
+	apiDelete := r.PathPrefix("/api").Methods("DELETE").Subrouter()
+	apiDelete.HandleFunc("/{view}/{key}", apiController.ApiDeleteHandler)
 
-    r.PathPrefix("/blog").Handler(http.StripPrefix("/blog", http.FileServer(http.Dir("./static"))))
+	r.PathPrefix("/admin/").Handler(http.StripPrefix("/admin/", http.FileServer(http.Dir("./static/admin"))))
+	r.PathPrefix("/admin").Handler(http.RedirectHandler("/admin/", 301))
 
-    r.PathPrefix("/foundation/").Handler(http.StripPrefix("/foundation/", http.FileServer(http.Dir("./static/foundation"))))
+	r.PathPrefix("/blog").Handler(http.StripPrefix("/blog", http.FileServer(http.Dir("./static"))))
 
-    r.HandleFunc("/{.path:.*}", cloudAdminHandler).Methods("GET")
-    r.HandleFunc("/{.path:.*}", cloudAdminPostHandler).Methods("POST")
+	r.PathPrefix("/foundation/").Handler(http.StripPrefix("/foundation/", http.FileServer(http.Dir("./static/foundation"))))
 
-    http.Handle("/", r)
+	r.HandleFunc("/{.path:.*}", cloudAdminHandler).Methods("GET")
+	r.HandleFunc("/{.path:.*}", cloudAdminPostHandler).Methods("POST")
+
+	http.Handle("/", r)
 }
-

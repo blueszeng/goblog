@@ -5,45 +5,92 @@ blogAdminControllers.service('UserService', [
 		
 	var currentUser = []
 
-  var getUser = function () {
-	console.log("Retrieve User")
-	console.log(currentUser[0])
-	return currentUser[0];
-  };
+	var getUser = function () {
+		console.log("Retrieve User")
+		console.log(currentUser[0])
+		return currentUser[0];
+	};
+	
+	var saveUser = function(newObj) {
+		currentUser.splice(0)
+		console.log("Store User")
+		currentUser.push(newObj);
+	};
 
-  var saveUser = function(newObj) {
-	currentUser.splice(0)
-	//console.log(currentUser)
-	console.log("Store User")
-	currentUser.push(newObj);
-  };
-  
-  return {
-    saveUser: saveUser,
-    getUser: getUser
-  };
+	return {
+		saveUser: saveUser,
+		getUser: getUser
+	};
 }]);
 
-blogAdminControllers.service('BlogIndexService', [
-	function() {
+blogAdminControllers.service('BlogIndexService', ['$rootScope', '$timeout', '$http',
+	function($rootScope, $timeout, $http) {
 		
-		var blogsIndex = []
+	var blogsIndex = []
+	var blogIndex = []
 		
-		var saveBlogs = function(newObj) {
-			blogsIndex.splice(0)
-			console.log(newObj)
-			blogsIndex.push(newObj);
+	var saveBlogs = function(newObj) {
+		blogsIndex.splice(0)
+		blogsIndex.push(newObj);
+	};
+	
+	var saveBlog = function(newObj) {
+		blogIndex.splice(0);
+		blogIndex.push(newObj);
+	}
+	
+	var getBlogs = function() {
+//		if (!blogsIndex[0]) {
+//			saveBlogs();
+//		}
+		console.log(blogsIndex[0])
+		return blogsIndex[0];
+	};
+	
+	var getBlog = function(string) {
+		if (!blogIndex[0]) {
+			console.log("No Saved Blog")
+			$timeout(function() {
+				$http.get('/api/blogs/'+string).then(function(data) {
+					if (data.error == "No Blogs Found") {
+						console.log("No Blog Found")
+						return "No Blog Found"
+					} else {
+						console.log(data.data)
+						saveBlog(data.data);
+						$rootScope.$broadcast('scopeChanged', "root.posts")
+					};										
+				});	
+			}, 0);
+		} else {
+			console.log("Saved Blog Found")
+			console.log(blogIndex[0]);
+			return blogIndex[0];			
 		};
-		
-		var getBlogs = function() {
-			return blogsIndex[0];
-		};
-		
-		return {
-			saveBlogs: saveBlogs,
-			getBlogs: getBlogs
-		};
-	}]);
+	};
+	
+	var loadBlog = function(string) {
+		var $blog = null;
+		$http.get('/api/blogs/'+string).then(function(data) {
+			if (data.error == "No Blogs Found") {
+				console.log("No Blog Found")
+				$blog = "No Blog Found";
+			} else {
+				$blog = data;
+			};
+		});
+		return $blog;
+	};
+	
+	
+	return {
+		saveBlogs: saveBlogs,
+		saveBlog: saveBlog,
+		getBlogs: getBlogs,
+		getBlog: getBlog,
+		loadBlog: loadBlog
+	};
+}]);
 
 blogAdminControllers.controller('AdminHeaderCtrl', ['$rootScope', '$scope', '$http', '$timeout', '$state', 'UserService',
 	function($rootScope, $scope, $http, $timeout, $state, UserService) {
@@ -147,7 +194,7 @@ blogAdminControllers.controller('UserEditCtrl', ['$rootScope', '$scope', '$http'
 	
 	$scope.cancelEdit = function() {
 		$state.go('root.home')
-	}
+	};
 	
 	$scope.add = function(newUser) {
 	 	$http.post('/api/users', newUser).success(function(data) {
@@ -161,7 +208,6 @@ blogAdminControllers.controller('UserEditCtrl', ['$rootScope', '$scope', '$http'
     	
 }]);
 	
-		
 blogAdminControllers.controller('BlogsListCtrl', ['$rootScope', '$scope', '$http', '$state', '$timeout', 'UserService', 'BlogIndexService',
 	function($rootScope, $scope, $http, $state, $timeout, UserService, BlogIndexService) {
 
@@ -180,8 +226,13 @@ blogAdminControllers.controller('BlogsListCtrl', ['$rootScope', '$scope', '$http
 		});
 	};
 	
-	$scope.blogLoad()
+	$scope.blogLoad();
 
+	$scope.openBlog = function(blog) {
+		BlogIndexService.saveBlog(blog);
+	     $state.go('root.posts', {blogID: blog.id}, {reload: true});
+	}
+	
 	$rootScope.$broadcast('scopeChanged', "root.blogs")
 }]);
 
@@ -232,3 +283,83 @@ blogAdminControllers.controller('BlogEditCtrl', ['$scope', '$http', '$stateParam
     		$state.go('^')
     	}
     }]);
+	
+blogAdminControllers.controller('PostsListCtrl', ['$rootScope', '$scope', '$http', '$stateParams', '$state', '$timeout', '$filter', 'UserService', 'BlogIndexService',
+	function($rootScope, $scope, $http, $stateParams, $state, $timeout, $filter, UserService, BlogIndexService) {
+
+    $scope.blogID = $stateParams.blogID;
+
+	$scope.$on('scopeChanged', function() {
+		$scope.blog = BlogIndexService.getBlog($scope.blogID);
+		if ($scope.blog) {
+			$scope.blogLoaded = true;
+			console.log($scope.blog.sortMethod)
+			switch($scope.blog.sortMethod) {
+				case '1':
+					console.log("Newest Post on top")
+					$scope.sort = 'postDate'
+					break;
+				case '2':
+					console.log("Oldest Post on top")
+					$scope.sort = '-postDate'
+					break;	
+				case '3':
+					console.log("Custom Order")
+					$scope.sort = 'position'
+					break;		
+			}
+			$scope.postsLoad();
+			
+		};
+	});
+
+	$scope.postsLoad = function () {
+		$http.get('/api/posts/'+$scope.blogID+'/all').success(function(data) {
+			if (data.error == "No Posts Found") {
+				console.log("No Posts")
+				$scope.hasPosts = false
+				$scope.loaded = true
+			} else {
+				$scope.hasPosts = true
+				$scope.posts = data
+				$scope.loaded = true
+			};
+		});
+	};
+	
+}]);
+	
+blogAdminControllers.controller('PostEditCtrl', ['$scope', '$http', '$stateParams', '$state', '$timeout', '$location', '$anchorScroll', 'BlogIndexService',
+	function($scope, $http, $stateParams, $state, $timeout, $location, $anchorScroll, BlogIndexService) {
+    	$scope.blogID = $stateParams.blogID;
+    	$scope.postID = $stateParams.postID;		
+		$scope.blogs = BlogIndexService.getBlogs();
+
+		console.log($scope.blogID)
+		console.log($scope.postID)
+		
+		if (!$scope.postID) {
+			console.log("New Blog")
+	    	$http.get('/api/posts/'+$scope.blogID+'/new').success(function(data) {
+	    		$scope.post = data
+	    	});			
+		} else {
+	    	$http.get('/api/posts/'+$scope.blogID+'/'+$scope.postID).success(function(data) {
+	    		$scope.post = data
+	    	});			
+		};
+
+    	$scope.update = function(post) {
+	     	$http.post('/api/posts/'+$scope.blogID, post).success(function() {
+	            $timeout(function() {
+	            	$state.go('^', {}, {reload: true});
+	            }, 100);
+	     	})
+      	};
+      	
+    	$scope.cancelEdit = function() {
+    		$state.go('^')
+    	};
+
+}]);
+	
