@@ -11,6 +11,7 @@ import (
 	//"html/template"
 	"appengine"
 	"appengine/datastore"
+	//"appengine/log"
 	"appengine/user"
 	"encoding/json"
 	//"appengine/memcache"
@@ -134,10 +135,10 @@ func BlogIndexPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	author, err := loadCurrentUser(c)
-	log.Println("POST /api/blogs: entered by", author.Role, author.Email)
+	log.Println("POST /api/blogs: Entered by", author.Role, author.Email)
 
 	if err != nil {
-		log.Println("POST /api/users: load user error", err)
+		log.Println("POST /api/blogs: Error loading user", err)
 		notFound(w, r)
 		return
 	}
@@ -145,7 +146,7 @@ func BlogIndexPost(w http.ResponseWriter, r *http.Request) {
 	var blogIndexPost, blogIndexFound BlogIndex
 
 	if err := d.Decode(&blogIndexPost); err != nil {
-		log.Println("Error decoding blog index post: ", err)
+		log.Println("POST /api/blogs: Error decoding blog post", err)
 		internalServerError(w, r)
 		return
 	}
@@ -156,7 +157,7 @@ func BlogIndexPost(w http.ResponseWriter, r *http.Request) {
 		blogIndexFound, _ = blogIndexLoad(c, blogIndexPost.ID)
 
 		if blogIndexFound.ID != blogIndexPost.ID {
-			log.Println("Error finding blog ID")
+			log.Println("POST /api/blogs: Error finding blog ID", blogIndexPost.ID)
 			notFound(w, r)
 			return
 		}
@@ -171,13 +172,13 @@ func BlogIndexPost(w http.ResponseWriter, r *http.Request) {
 		user, err := findUser(c, author.Email)
 
 		if err != nil || user.UID == "" {
-			log.Println("not saved", author.Email)
+			log.Println("POST /api/blogs: Error author not found", author.Email)
 		} else {
 			if !stringInSlice(user.UID, blogAuthorsID) {
-				log.Println("saved", author.Email)
+				//log.Println("saved", author.Email)
 				blogAuthorsID = append(blogAuthorsID, user.UID)
 			} else {
-				log.Println("duplicate", author.Email)
+				log.Println("POST /api/blogs: Duplicate author", author.Email)
 			}
 		}
 	}
@@ -189,11 +190,11 @@ func BlogIndexPost(w http.ResponseWriter, r *http.Request) {
 	setNewPosition := false
 
 	if blogIndexPost.Position == 0 {
-		log.Println("No Position Passed")
+		log.Println("POST /api/blogs: Position set to 0")
 		lastPosition, err := blogIndexLastPosition(c)
 
 		if err != nil {
-			log.Println("Error getting last index", err)
+			log.Println("POST /api/blogs: Error getting last index", err)
 			internalServerError(w, r)
 		}
 		blogIndexPost.Position = lastPosition + 10
@@ -222,18 +223,19 @@ func BlogIndexPost(w http.ResponseWriter, r *http.Request) {
 
 	if setNewPosition {
 		if err := blogIndexSetPosition(c, blogIndexPost.Position, blogIndex); err != nil {
-			log.Println("Error saving user: ", err)
+			log.Println("POST /api/blogs: Error saving blog", err)
 			internalServerError(w, r)
 			return
 		}
 	} else {
 		if err := blogIndexSave(c, blogIndex); err != nil {
-			log.Println("Error saving user: ", err)
+			log.Println("POST /api/blogs: Error saving blog", err)
 			internalServerError(w, r)
 			return
 		}
 	}
 
+	log.Println("POST /api/blogs: Exited successfully")
 	e.Encode(&blogIndex)
 }
 
@@ -241,27 +243,33 @@ func BlogsIndexGet(w http.ResponseWriter, r *http.Request, blogID string) {
 	c := appengine.NewContext(r)
 	e := json.NewEncoder(w)
 
-	log.Println("GET /api/blogs entered")
+	userCurrent, err := loadCurrentUser(c)
+	if err != nil {
+		c.Errorf("GET /api/blogs: Error loading user: %v", err)
+		notFound(w, r)
+		return
+	}
+
 	notFoundError := ErrorJson{
 		Message: "No Blogs Found",
 	}
 
 	if user.IsAdmin(c) == false {
+		c.Warningf("GET /api/blogs: Unauthorized access by user: %v", userCurrent.Email)
 		forbidden(w, r)
 		return
 	}
 
 	if blogID == "all" {
-
+		log.Infof("GET /api/blogs/all: Entered by user: %v", userCurrent.Email)
 		blogsIndex, err := blogsIndexLoadAll(c)
 
 		if err != nil {
-			log.Println("Error loading blogs: ", err)
+			c.Errorf("GET /api/blogs/all: Error lookup blog: %v", err)
 			internalServerError(w, r)
 		}
 
 		for i, _ := range blogsIndex {
-
 			namesID := blogsIndex[i].AuthorsID
 
 			for _, j := range namesID {
@@ -279,41 +287,37 @@ func BlogsIndexGet(w http.ResponseWriter, r *http.Request, blogID string) {
 
 				blogsIndex[i].BlogAuthors = append(blogsIndex[i].BlogAuthors, author)
 			}
-
-			//log.Println(blogsIndex[i].Authors)
 		}
 
 		if blogsIndex == nil {
+			c.Infof("GET /api/blogs/all: No Blogs Found")
 			e.Encode(&notFoundError)
 		} else {
+			c.Infof("GET /api/blogs/all: Exited successfully")
 			e.Encode(&blogsIndex)
 		}
 	} else if blogID == "new" {
+		c.Infof("GET /api/blogs/new: Entered by user: %v", userCurrent.Email)
 
 		var blog BlogIndex
-		currentUser, err := loadCurrentUser(c)
-
-		if err != nil {
-			log.Println(err)
-			internalServerError(w, r)
-			return
-		}
 
 		author := Author{
-			Name:  currentUser.DisplayName,
-			Email: currentUser.Email,
+			Name:  userCurrent.DisplayName,
+			Email: userCurrent.Email,
 		}
 
 		blog.BlogAuthors = append(blog.BlogAuthors, author)
 		blog.SortMethod = "1"
+
+		c.Infof("GET /api/blogs/new: Exited successfully")
+
 		e.Encode(&blog)
 	} else {
-		log.Println("BlogID = ", blogID)
+		c.Infof("GET /api/blogs/%v: Entered by user: %v", blogID, userCurrent.Email)
 		blogIndex, err := blogIndexLoad(c, blogID)
 
 		if err != nil {
-			log.Println("GET /api/blogs error", err)
-
+			c.Errorf("GET /api/blogs/%v: Error lookup blog: %v", blogID, err)
 		}
 
 		namesID := blogIndex.AuthorsID
@@ -335,8 +339,10 @@ func BlogsIndexGet(w http.ResponseWriter, r *http.Request, blogID string) {
 		}
 
 		if blogIndex.ID != blogID {
+			c.Infof("GET /api/blogs/%v: No Blog Found", blogID)
 			e.Encode(&notFoundError)
 		} else {
+			c.Infof("GET /api/blogs/%v: Exited successfully", blogID)
 			e.Encode(&blogIndex)
 		}
 	}

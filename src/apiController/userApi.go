@@ -60,7 +60,7 @@ func loadCurrentUser(c appengine.Context) (User, error) {
 
 	var currentUser User
 
-	log.Println("looking for user", u)
+	//log.Println("looking for user", u)
 
 	if u == nil {
 		currentUser = User{
@@ -187,7 +187,7 @@ func userGetNameString(c appengine.Context, userID string) (string, string, erro
 	user, err := findUser(c, userID)
 
 	if err != nil {
-		log.Println("Error finding user name: ", err)
+		//log.Println("Error finding user name: ", err)
 		return "", "", err
 	}
 
@@ -247,7 +247,7 @@ func UserGet(w http.ResponseWriter, r *http.Request, userReqID string) {
 			}
 
 			log.Println("GET /api/users/userReqID: success lookup user", user.Email)
-			log.Println(user)
+			//log.Println(user)
 			e.Encode(&user)
 		}
 	}

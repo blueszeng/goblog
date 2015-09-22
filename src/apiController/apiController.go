@@ -55,7 +55,7 @@ func ApiGetHandler(w http.ResponseWriter, r *http.Request) {
 	parent := strings.ToLower(vars["parent"])
 	key := strings.ToLower(vars["key"])
 
-	log.Println("API GET:", view, "With Key:", key)
+	//log.Println("API GET:", view, "With Key:", key)
 
 	switch view {
 	case "users":
@@ -65,17 +65,17 @@ func ApiGetHandler(w http.ResponseWriter, r *http.Request) {
 	case "loginpage":
 		LoginPageHtml(w, r)
 	case "blogs":
-		log.Println("view = blogs")
+		//log.Println("view = blogs")
 		if key == "" {
 			BlogsIndexGet(w, r, "")
 		} else {
 			BlogsIndexGet(w, r, key)
 		}
 	case "posts":
-		log.Println("view = posts")
+		//log.Println("view = posts")
 		PostsIndexGet(w, r, parent, key)
 	default:
-		log.Println("view not found")
+		//log.Println("view not found")
 		notFound(w, r)
 	}
 }
@@ -85,7 +85,7 @@ func ApiPostHandler(w http.ResponseWriter, r *http.Request) {
 	view := strings.ToLower(vars["view"])
 	key := strings.ToLower(vars["key"])
 
-	log.Println("API POST:", view)
+	//log.Println("API POST:", view)
 
 	switch view {
 	case "users":
