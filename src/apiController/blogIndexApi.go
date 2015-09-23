@@ -5,17 +5,12 @@ package apiController
 import (
 	//"time"
 	//"sort"
-	"log"
-	"net/http"
-	//"strconv"
-	//"html/template"
 	"appengine"
 	"appengine/datastore"
-	//"appengine/log"
 	"appengine/user"
-	"encoding/json"
-	//"appengine/memcache"
 	"code.google.com/p/go-uuid/uuid"
+	"encoding/json"
+	"net/http"
 )
 
 type BlogIndex struct {
@@ -109,14 +104,14 @@ func blogIndexSetPosition(c appengine.Context, newPosition int, setBlog BlogInde
 		return err1
 	}
 
-	log.Println("POST /api/blogs: Position set", setBlog.ID, "to position", newPosition)
+	c.Infof("POST /api/blogs: Position %v set to %v", setBlog.ID, newPosition)
 
 	if blogs != nil {
 		for k, v := range blogs {
 			if v.Position == newPosition {
-				log.Println(blogs[k].ID, "has overlapping position")
+				//log.Println(blogs[k].ID, "has overlapping position")
 				if err2 := blogIndexSetPosition(c, blogs[k].Position+k+1, blogs[k]); err2 != nil {
-					log.Println("Error setting postion for ", blogs[k].ID, err2)
+					c.Errorf("POST /api/blogs: Error setting %v position to %v", blogs[k].ID, err2)
 				}
 			}
 		}
@@ -135,10 +130,10 @@ func BlogIndexPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	author, err := loadCurrentUser(c)
-	log.Println("POST /api/blogs: Entered by", author.Role, author.Email)
+	c.Infof("POST /api/blogs: Entered by user: %v (%v)", author.Email, author.Role)
 
 	if err != nil {
-		log.Println("POST /api/blogs: Error loading user", err)
+		c.Errorf("POST /api/blogs: Error loading user: %v", err)
 		notFound(w, r)
 		return
 	}
@@ -146,7 +141,7 @@ func BlogIndexPost(w http.ResponseWriter, r *http.Request) {
 	var blogIndexPost, blogIndexFound BlogIndex
 
 	if err := d.Decode(&blogIndexPost); err != nil {
-		log.Println("POST /api/blogs: Error decoding blog post", err)
+		c.Errorf("POST /api/blogs: Error decoding blog post: %v", err)
 		internalServerError(w, r)
 		return
 	}
@@ -157,11 +152,15 @@ func BlogIndexPost(w http.ResponseWriter, r *http.Request) {
 		blogIndexFound, _ = blogIndexLoad(c, blogIndexPost.ID)
 
 		if blogIndexFound.ID != blogIndexPost.ID {
-			log.Println("POST /api/blogs: Error finding blog ID", blogIndexPost.ID)
+			c.Errorf("POST /api/blogs: Error finding blogID: %v", blogIndexPost.ID)
 			notFound(w, r)
 			return
 		}
+
 		blogID = blogIndexFound.ID
+		c.Infof("POST /api/blogs: Editing blogID: %v", blogID)
+	} else {
+		c.Infof("POST /api/blogs: Creating New blogID: %v", blogID)
 	}
 
 	var blogAuthorsID []string
@@ -172,13 +171,12 @@ func BlogIndexPost(w http.ResponseWriter, r *http.Request) {
 		user, err := findUser(c, author.Email)
 
 		if err != nil || user.UID == "" {
-			log.Println("POST /api/blogs: Error author not found", author.Email)
+			c.Errorf("POST /api/blogs: Error author not found: %v", author.Email)
 		} else {
 			if !stringInSlice(user.UID, blogAuthorsID) {
-				//log.Println("saved", author.Email)
 				blogAuthorsID = append(blogAuthorsID, user.UID)
 			} else {
-				log.Println("POST /api/blogs: Duplicate author", author.Email)
+				c.Infof("POST /api/blogs: Duplicate author: %v", author.Email)
 			}
 		}
 	}
@@ -190,11 +188,12 @@ func BlogIndexPost(w http.ResponseWriter, r *http.Request) {
 	setNewPosition := false
 
 	if blogIndexPost.Position == 0 {
-		log.Println("POST /api/blogs: Position set to 0")
+
+		c.Infof("POST /api/blogs: Position set to 0")
 		lastPosition, err := blogIndexLastPosition(c)
 
 		if err != nil {
-			log.Println("POST /api/blogs: Error getting last index", err)
+			c.Errorf("POST /api/blogs: Error getting last index: %v", err)
 			internalServerError(w, r)
 		}
 		blogIndexPost.Position = lastPosition + 10
@@ -223,19 +222,19 @@ func BlogIndexPost(w http.ResponseWriter, r *http.Request) {
 
 	if setNewPosition {
 		if err := blogIndexSetPosition(c, blogIndexPost.Position, blogIndex); err != nil {
-			log.Println("POST /api/blogs: Error saving blog", err)
+			c.Errorf("POST /api/blogs: Error saving blog: %v", err)
 			internalServerError(w, r)
 			return
 		}
 	} else {
 		if err := blogIndexSave(c, blogIndex); err != nil {
-			log.Println("POST /api/blogs: Error saving blog", err)
+			c.Errorf("POST /api/blogs: Error saving blog: %v", err)
 			internalServerError(w, r)
 			return
 		}
 	}
 
-	log.Println("POST /api/blogs: Exited successfully")
+	c.Infof("POST /api/blogs: Exited succesfully")
 	e.Encode(&blogIndex)
 }
 
@@ -244,6 +243,8 @@ func BlogsIndexGet(w http.ResponseWriter, r *http.Request, blogID string) {
 	e := json.NewEncoder(w)
 
 	userCurrent, err := loadCurrentUser(c)
+	c.Infof("GET /api/blogs/%v: Entered by user: %v (%v)", blogID, userCurrent.Email, userCurrent.Role)
+
 	if err != nil {
 		c.Errorf("GET /api/blogs: Error loading user: %v", err)
 		notFound(w, r)
@@ -261,7 +262,6 @@ func BlogsIndexGet(w http.ResponseWriter, r *http.Request, blogID string) {
 	}
 
 	if blogID == "all" {
-		log.Infof("GET /api/blogs/all: Entered by user: %v", userCurrent.Email)
 		blogsIndex, err := blogsIndexLoadAll(c)
 
 		if err != nil {
@@ -297,8 +297,6 @@ func BlogsIndexGet(w http.ResponseWriter, r *http.Request, blogID string) {
 			e.Encode(&blogsIndex)
 		}
 	} else if blogID == "new" {
-		c.Infof("GET /api/blogs/new: Entered by user: %v", userCurrent.Email)
-
 		var blog BlogIndex
 
 		author := Author{
@@ -313,7 +311,6 @@ func BlogsIndexGet(w http.ResponseWriter, r *http.Request, blogID string) {
 
 		e.Encode(&blog)
 	} else {
-		c.Infof("GET /api/blogs/%v: Entered by user: %v", blogID, userCurrent.Email)
 		blogIndex, err := blogIndexLoad(c, blogID)
 
 		if err != nil {

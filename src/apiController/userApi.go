@@ -14,7 +14,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
+	//"log"
 	"net/http"
 	"os"
 	"strings"
@@ -29,7 +29,7 @@ func generateSalt(secret []byte) []byte {
 	_, err := io.ReadFull(rand.Reader, buf)
 
 	if err != nil {
-		log.Println("random read failed: ", err)
+		//log.Println("random read failed: ", err)
 		os.Exit(1)
 	}
 
@@ -70,7 +70,7 @@ func loadCurrentUser(c appengine.Context) (User, error) {
 			Role:        "Guest",
 		}
 	} else {
-		log.Println(u.ID)
+		//log.Println(u.ID)
 
 		q := datastore.NewQuery("UserTable").
 			Filter("Email =", u.Email).
@@ -199,22 +199,22 @@ func UserGet(w http.ResponseWriter, r *http.Request, userReqID string) {
 	e := json.NewEncoder(w)
 
 	userCurrent, err := loadCurrentUser(c)
-	log.Println("GET /api/users: entered by", userCurrent.Role, userCurrent.Email)
+	c.Infof("GET /api/users/%v: Entered by user: %v (%v)", userReqID, userCurrent.Email, userCurrent.Role)
 
 	if err != nil {
-		log.Println("GET /api/users: error loading current user", err)
+		c.Errorf("GET /api/users/%v: Error loading current user: %v", userReqID, err)
 		internalServerError(w, r)
 		return
 	}
 
 	if userReqID == "" {
-		log.Println("GET /api/users: success lookup user", userCurrent.Email)
-		log.Println(userCurrent)
-		e.Encode(&userCurrent)
+		c.Infof("GET /api/users/%v: Exited successfully", userReqID)
+		//log.Println(userCurrent)
+		e.
+			Encode(&userCurrent)
 	} else {
 		if userCurrent.Role != "SiteAdmin" {
-			log.Println("GET /api/users: unauthorized user access by", userCurrent.Role, userCurrent.Email)
-			log.Println("GET /api/users: unauthorized lookup of", userReqID)
+			c.Warningf("GET /api/users/%v: Unauthorized access by user: %v", userReqID, userCurrent.Email)
 			forbidden(w, r)
 			return
 		}
@@ -223,30 +223,28 @@ func UserGet(w http.ResponseWriter, r *http.Request, userReqID string) {
 			users, err := loadAllUsers(c)
 
 			if err != nil {
-				log.Println("GET /api/users/all: error loading all users", err)
+				c.Errorf("GET /api/users/all: Error loading all users: %v", err)
 				internalServerError(w, r)
 				return
 			}
-
-			log.Println("GET /api/users/all: success lookup all")
+			c.Infof("GET /api/users/all: Exited successfully")
 			e.Encode(&users)
 		} else {
 			user, err := findUser(c, userReqID)
 
 			if err != nil {
-				log.Println(err)
-				log.Println("GET /api/users/userReqID: error lookup failed on", userReqID)
+				c.Errorf("GET /api/users/%v: Error loading user: %v", userReqID, err)
 				notFound(w, r)
 				return
 			}
 
 			if user.Email == "" {
-				log.Println("GET /api/users/userReqID: user not found", userReqID)
+				c.Warningf("GET /api/users/%v: User not found", userReqID)
 				notFound(w, r)
 				return
 			}
 
-			log.Println("GET /api/users/userReqID: success lookup user", user.Email)
+			c.Infof("GET /api/users/%v: Exited successfully", userReqID)
 			//log.Println(user)
 			e.Encode(&user)
 		}
@@ -289,7 +287,7 @@ func UserDelete(w http.ResponseWriter, r *http.Request, userID string) {
 	userDelete.ActiveFlag = false
 
 	if err := userSave(c, userDelete); err != nil {
-		log.Println("Error saving user: ", err)
+		//log.Println("Error saving user: ", err)
 		internalServerError(w, r)
 		return
 	}
@@ -304,16 +302,16 @@ func UserPost(w http.ResponseWriter, r *http.Request) {
 	e := json.NewEncoder(w)
 
 	userCurrent, err := loadCurrentUser(c)
-	log.Println("POST /api/users: entered by", userCurrent.Role, userCurrent.Email)
+	c.Infof("POST /api/users: Entered by user: %v (%v)", userCurrent.Email, userCurrent.Role)
 
 	if err != nil {
-		log.Println("POST /api/users: error loading current user", err)
+		c.Errorf("POST /api/users: Error loading current user: %v", err)
 		internalServerError(w, r)
 		return
 	}
 
 	if userCurrent.Role == "" {
-		log.Println("POST /api/users: error unauthorized access")
+		c.Warningf("POST /api/users: Unauthorized access by user: %v", userCurrent.Email)
 		unauthorized(w, r)
 		return
 	}
@@ -321,7 +319,7 @@ func UserPost(w http.ResponseWriter, r *http.Request) {
 	var userPost, userEdited User
 
 	if err := d.Decode(&userPost); err != nil {
-		log.Println("POST /api/users: error decoding user post", err)
+		c.Errorf("POST /api/users: Error decoding user post: %v", err)
 		internalServerError(w, r)
 		return
 	}
@@ -337,7 +335,7 @@ func UserPost(w http.ResponseWriter, r *http.Request) {
 
 	if len(userPost.Email) == 0 || userPost.Email == userCurrent.Email {
 		userEdited = userCurrent
-		log.Println("POST /api/users: editing user", userEdited.Email)
+		c.Infof("POST /api/users: Editing user: %v", userEdited.Email)
 	} else {
 		userEdited, _ = findUser(c, userPost.Email)
 
@@ -356,19 +354,19 @@ func UserPost(w http.ResponseWriter, r *http.Request) {
 	if currentUserID != userEdited.UID {
 		if userCurrent.Role == "New" && userCurrent.Email == userEdited.Email {
 			cleanupOldUser = true
-			log.Println("POST /api/users: editing New user", userEdited.Email)
+			c.Infof("POST /api/users: Setting New user: %v", userEdited.Email)
 		} else if userCurrent.Role == "SiteAdmin" {
-			log.Println("POST /api/users: Admin editing user", userEdited.Email)
+			c.Infof("POST /api/users: Admin Editing user: %v", userEdited.Email)
 		} else {
-			log.Println("POST /api/users: unauthorized user access by", userCurrent.Role, userCurrent.Email)
-			log.Println("POST /api/users: unauthorized editing of", userPost.Email)
+			c.Warningf("POST /api/users: Unauthorized access by user: %v", userCurrent.Email)
+			c.Warningf("POST /api/users: Unauthorized editing of: %v", userPost.Email)
 			forbidden(w, r)
 			return
 		}
 	}
 
 	if userEdited.ActiveFlag == false && hasUserInfo {
-		log.Println("POST /api/users: error user deactivated", userEdited.Email)
+		c.Warningf("POST /api/users: User Deactivited: %v", userEdited.Email)
 		forbidden(w, r)
 		return
 	}
@@ -412,14 +410,14 @@ func UserPost(w http.ResponseWriter, r *http.Request) {
 		ActiveFlag:   true}
 
 	if err := userSave(c, userUpdate); err != nil {
-		log.Println("Error saving user: ", err)
+		c.Errorf("POST /api/users: Error saving user: %v", err)
 		internalServerError(w, r)
 		return
 	}
 
 	if cleanupOldUser {
 		if err := userDelete(c, userEdited); err != nil {
-			log.Println("Error deleting user: ", err)
+			c.Errorf("POST /api/users: Error cleaning up old user: %v", err)
 			internalServerError(w, r)
 			return
 		}
@@ -428,6 +426,7 @@ func UserPost(w http.ResponseWriter, r *http.Request) {
 	userUpdate.LoginURL, _ = user.LoginURL(c, "/admin/")
 	userUpdate.LogoutURL, _ = user.LogoutURL(c, "/admin/")
 
+	c.Infof("POST /api/users: Exited successfully")
 	e.Encode(&userUpdate)
 }
 
@@ -446,7 +445,7 @@ func LoginPageHtml(w http.ResponseWriter, r *http.Request) {
 	resp, err := client.Get(loginPageURL)
 
 	if err != nil {
-		log.Println(err)
+		//log.Println(err)
 		fmt.Fprintf(w, "Sorry, something went wrong")
 		return
 	}
@@ -456,7 +455,7 @@ func LoginPageHtml(w http.ResponseWriter, r *http.Request) {
 	contents, err1 := ioutil.ReadAll(resp.Body)
 
 	if err1 != nil {
-		log.Println(err)
+		//log.Println(err)
 		fmt.Fprintf(w, "Sorry, something went wrong")
 		return
 	}
@@ -473,17 +472,16 @@ func UserLookupGet(w http.ResponseWriter, r *http.Request, userEmail string) {
 	}
 
 	userCurrent, err := loadCurrentUser(c)
-	log.Println("GET /api/userlookup: entered by", userCurrent.Role, userCurrent.Email)
+	c.Infof("GET /api/userlookup/%v: Entered by user: %v (%v)", userEmail, userCurrent.Email, userCurrent.Role)
 
 	if err != nil {
-		log.Println("GET /api/userlookup: error loading current user", err)
+		c.Errorf("GET /api/userlookup/%v: Error loading current user: %v", userEmail, err)
 		internalServerError(w, r)
 		return
 	}
 
 	if userCurrent.Role != "SiteAdmin" {
-		log.Println("GET /api/userlookup: unauthorized user access by", userCurrent.Role, userCurrent.Email)
-		log.Println("GET /api/userlookup: unauthorized lookup of", userEmail)
+		c.Warningf("GET /api/userlookup/%v: Unauthorized access by user: %v", userEmail, userCurrent.Email)
 		forbidden(w, r)
 		return
 	}
@@ -491,7 +489,7 @@ func UserLookupGet(w http.ResponseWriter, r *http.Request, userEmail string) {
 	user, err := findUser(c, userEmail)
 
 	if err != nil {
-		log.Println("GET /api/userlookup: error finding user name: ", err)
+		c.Errorf("GET /api/userlookup/%v: Error finding user name: ", userEmail, err)
 		e.Encode(&notFoundError)
 	}
 
@@ -500,6 +498,6 @@ func UserLookupGet(w http.ResponseWriter, r *http.Request, userEmail string) {
 		Email: user.Email,
 	}
 
-	log.Println("GET /api/users/userlookup: success lookup user", user.Email)
+	c.Infof("GET /api/userlookup/%v: Exited successfully", userEmail)
 	e.Encode(&userInfo)
 }
