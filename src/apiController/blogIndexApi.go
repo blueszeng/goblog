@@ -124,13 +124,14 @@ func BlogIndexPost(w http.ResponseWriter, r *http.Request) {
 	d := json.NewDecoder(r.Body)
 	e := json.NewEncoder(w)
 
+	author, err := loadCurrentUser(c)
+	c.Infof("POST /api/blogs: Entered by user: %v (%v)", author.Email, author.Role)
+
 	if user.IsAdmin(c) == false {
+		c.Warningf("GET /api/blogs: Unauthorized access by user: %v", author.Email)
 		forbidden(w, r)
 		return
 	}
-
-	author, err := loadCurrentUser(c)
-	c.Infof("POST /api/blogs: Entered by user: %v (%v)", author.Email, author.Role)
 
 	if err != nil {
 		c.Errorf("POST /api/blogs: Error loading user: %v", err)
@@ -265,7 +266,7 @@ func BlogsIndexGet(w http.ResponseWriter, r *http.Request, blogID string) {
 		blogsIndex, err := blogsIndexLoadAll(c)
 
 		if err != nil {
-			c.Errorf("GET /api/blogs/all: Error lookup blog: %v", err)
+			c.Errorf("GET /api/blogs/all: Error loading blogs: %v", err)
 			internalServerError(w, r)
 		}
 

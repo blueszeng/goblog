@@ -5,7 +5,7 @@ package apiController
 import (
 	"time"
 	//"sort"
-	"log"
+	//"log"
 	"net/http"
 	//"strconv"
 	//"html/template"
@@ -86,7 +86,7 @@ func postIndexLastPosition(c appengine.Context) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	log.Println(posts)
+	//log.Println(posts)
 
 	if posts == nil {
 		return 0, nil
@@ -112,14 +112,14 @@ func postIndexSetPosition(c appengine.Context, newPosition int, setPost PostInde
 	if err1 := postIndexSave(c, setPost, blogID); err1 != nil {
 		return err1
 	}
-	log.Println("Post Position setting", setPost.ID, "to position", newPosition)
+	c.Infof("POST /api/posts/%v: Position %v set to %v", blogID, setPost.ID, newPosition)
 
 	if posts != nil {
 		for k, v := range posts {
 			if v.Position == newPosition {
-				log.Println(posts[k].ID, "has overlapping position")
+				//log.Println(posts[k].ID, "has overlapping position")
 				if err2 := postIndexSetPosition(c, posts[k].Position+k+1, posts[k], blogID); err2 != nil {
-					log.Println("Error setting postion for ", posts[k].ID, err2)
+					c.Errorf("POST /api/posts/%v: Error setting %v position to %v", blogID, posts[k].ID, err2)
 				}
 			}
 		}
@@ -132,15 +132,17 @@ func PostIndexPost(w http.ResponseWriter, r *http.Request, blogID string) {
 	d := json.NewDecoder(r.Body)
 	e := json.NewEncoder(w)
 
+	author, err := loadCurrentUser(c)
+	c.Infof("POST /api/posts/%v: Entered by user: %v (%v)", blogID, author.Email, author.Role)
+
 	if user.IsAdmin(c) == false {
+		c.Warningf("POST /api/posts/%v: Unauthorized access by user: %v", blogID, author.Email)
 		forbidden(w, r)
 		return
 	}
 
-	author, err := loadCurrentUser(c)
-
 	if err != nil {
-		log.Println("No User Found: ", err)
+		c.Errorf("POST /api/posts/%v: Error loading user: %v", blogID, err)
 		notFound(w, r)
 		return
 	}
@@ -148,7 +150,7 @@ func PostIndexPost(w http.ResponseWriter, r *http.Request, blogID string) {
 	var postIndexPost, postIndexFound PostIndex
 
 	if err := d.Decode(&postIndexPost); err != nil {
-		log.Println("Error decoding postIndex post: ", err)
+		c.Errorf("POST /api/posts/%v: Error decoding post post: %v", blogID, err)
 		internalServerError(w, r)
 		return
 	}
@@ -162,22 +164,25 @@ func PostIndexPost(w http.ResponseWriter, r *http.Request, blogID string) {
 		postIndexFound, _ = postIndexLoad(c, postIndexPost.ID, blogID)
 
 		if postIndexFound.ID != postIndexPost.ID {
-			log.Println("Error finding post ID")
+			c.Errorf("POST /api/posts/%v: Error finding postID: %v", blogID, postIndexPost.ID)
 			notFound(w, r)
 			return
 		}
 		postID = postIndexFound.ID
+		c.Infof("POST /api/posts/%v: Editing postID: %v", blogID, postID)
 		postCreatedDate = postIndexFound.CreatedDate
+	} else {
+		c.Infof("POST /api/posts/%v: Creating New postID: %v", blogID, postID)
 	}
 
 	setNewPosition := false
 
 	if postIndexPost.Position == 0 {
-		log.Println("No Position Passed")
+		c.Infof("POST /api/posts/%v: Position set to 0", blogID)
 		lastPosition, err := postIndexLastPosition(c)
 
 		if err != nil {
-			log.Println("Error getting last index", err)
+			c.Errorf("POST /api/posts/%v: Error getting last index: %v", blogID, err)
 			internalServerError(w, r)
 		}
 		postIndexPost.Position = lastPosition + 10
@@ -185,7 +190,7 @@ func PostIndexPost(w http.ResponseWriter, r *http.Request, blogID string) {
 		setNewPosition = true
 	}
 
-	log.Println(postIndexPost.PostDateStr)
+	//log.Println(postIndexPost.PostDateStr)
 
 	loc, _ := time.LoadLocation("America/Chicago")
 
@@ -211,18 +216,19 @@ func PostIndexPost(w http.ResponseWriter, r *http.Request, blogID string) {
 
 	if setNewPosition {
 		if err := postIndexSetPosition(c, postIndexPost.Position, postIndex, blogID); err != nil {
-			log.Println("Error saving user: ", err)
+			c.Errorf("POST /api/posts/%v: Error saving post: %v", blogID, err)
 			internalServerError(w, r)
 			return
 		}
 	} else {
 		if err := postIndexSave(c, postIndex, blogID); err != nil {
-			log.Println("Error saving user: ", err)
+			c.Errorf("POST /api/posts/%v: Error saving post: %v", blogID, err)
 			internalServerError(w, r)
 			return
 		}
 	}
 
+	c.Infof("POST /api/posts/%v: Exited succesfully", blogID)
 	e.Encode(&postIndex)
 }
 
@@ -230,12 +236,21 @@ func PostsIndexGet(w http.ResponseWriter, r *http.Request, blogID string, postID
 	c := appengine.NewContext(r)
 	e := json.NewEncoder(w)
 
-	log.Println("GET /api/posts entered")
+	userCurrent, err := loadCurrentUser(c)
+	c.Infof("GET /api/posts/%v/%v: Entered by user: %v (%v)", blogID, postID, userCurrent.Email, userCurrent.Role)
+
+	if err != nil {
+		c.Errorf("GET /api/posts/%v/%v: Error loading user: %v", blogID, postID, err)
+		notFound(w, r)
+		return
+	}
+
 	notFoundError := ErrorJson{
 		Message: "No Posts Found",
 	}
 
 	if user.IsAdmin(c) == false {
+		c.Warningf("GET /api/posts/%v/%v: Unauthorized access by user: %v", blogID, postID, userCurrent.Email)
 		forbidden(w, r)
 		return
 	}
@@ -245,7 +260,7 @@ func PostsIndexGet(w http.ResponseWriter, r *http.Request, blogID string, postID
 		postsIndex, err := postsIndexLoadAll(c, blogID)
 
 		if err != nil {
-			log.Println("Error loading posts: ", err)
+			c.Errorf("GET /api/posts/%v/all: Error loading posts: %v", blogID, err)
 			internalServerError(w, r)
 		}
 
@@ -281,36 +296,30 @@ func PostsIndexGet(w http.ResponseWriter, r *http.Request, blogID string, postID
 		//log.Println(blogsIndex[i].Authors)
 
 		if postsIndex == nil {
+			c.Infof("GET /api/posts/%v/all: No Posts Found", blogID)
 			e.Encode(&notFoundError)
 		} else {
+			c.Infof("GET /api/posts/%v/all: Exited successfully", blogID)
 			e.Encode(&postsIndex)
 		}
 	} else if postID == "new" {
 
 		var post PostIndex
-		currentUser, err := loadCurrentUser(c)
-
-		if err != nil {
-			log.Println(err)
-			internalServerError(w, r)
-			return
-		}
 
 		author := Author{
-			Name:  currentUser.DisplayName,
-			Email: currentUser.Email,
+			Name:  userCurrent.DisplayName,
+			Email: userCurrent.Email,
 		}
 
 		post.PostAuthor = author
 
+		c.Infof("GET /api/posts/%v/new: Exited successfully", blogID)
 		e.Encode(&post)
 	} else {
-		log.Println("PostID = ", postID)
 		postIndex, err := postIndexLoad(c, postID, blogID)
 
 		if err != nil {
-			log.Println("GET /api/posts error", err)
-
+			c.Errorf("GET /api/posts/%v/%v: Error lookup blog: %v", blogID, postID, err)
 		}
 
 		namesID := postIndex.AuthorID
@@ -333,8 +342,10 @@ func PostsIndexGet(w http.ResponseWriter, r *http.Request, blogID string, postID
 		postIndex.StopDateStr = postIndex.StopDate.Format("01-02-2006")
 
 		if postIndex.ID != postID {
+			c.Infof("GET /api/posts/%v/%v: No Post Found", blogID, postID)
 			e.Encode(&notFoundError)
 		} else {
+			c.Infof("GET /api/posts/%v/%v: Exited successfully", blogID, postID)
 			e.Encode(&postIndex)
 		}
 	}

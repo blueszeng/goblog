@@ -7,7 +7,7 @@ import (
 	//"appengine/user"
 	//"fmt"
 	"github.com/gorilla/mux"
-	"log"
+	//"log"
 	"net/http"
 	"strings"
 )
@@ -93,7 +93,7 @@ func ApiPostHandler(w http.ResponseWriter, r *http.Request) {
 	case "blogs":
 		BlogIndexPost(w, r)
 	case "posts":
-		log.Println("view = posts")
+		//log.Println("view = posts")
 		PostIndexPost(w, r, key)
 	default:
 		notFound(w, r)
