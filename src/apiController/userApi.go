@@ -71,9 +71,10 @@ func loadCurrentUser(c appengine.Context) (User, error) {
 		}
 	} else {
 		//log.Println(u.ID)
+		userEmail := strings.ToLower(u.Email)
 
 		q := datastore.NewQuery("UserTable").
-			Filter("Email =", u.Email).
+			Filter("Email =", userEmail).
 			Limit(1)
 
 		var allUsers []User
@@ -83,7 +84,7 @@ func loadCurrentUser(c appengine.Context) (User, error) {
 		}
 
 		for k, v := range allUsers {
-			if v.Email == u.Email {
+			if v.Email == userEmail {
 				currentUser = allUsers[k]
 			}
 		}
@@ -122,6 +123,7 @@ func loadCurrentUser(c appengine.Context) (User, error) {
 	currentUser.LoginURL, _ = user.LoginURL(c, "/admin/")
 	currentUser.LogoutURL, _ = user.LogoutURL(c, "/admin/")
 
+	//c.Infof("%v", currentUser.Email)
 	return currentUser, nil
 }
 
@@ -401,7 +403,7 @@ func UserPost(w http.ResponseWriter, r *http.Request) {
 
 	userUpdate := User{
 		UID:          userID,
-		Email:        userEdited.Email,
+		Email:        strings.ToLower(userEdited.Email),
 		Salt:         userSalt,
 		DisplayName:  userName,
 		CreateDate:   userCreate,
