@@ -245,19 +245,10 @@ blogAdminControllers.controller('BlogEditCtrl', ['$scope', '$http', '$stateParam
 			console.log("New Blog")
 	    	$http.get('/api/blogs/new').success(function(data) {
 	    		$scope.blog = data
-				
-		    	//$timeout(function() {
-		    		//$location.hash('blogEdit');
-		    		//$anchorScroll(); 
-		    	//}, 100);
 	    	});			
 		} else {
 	    	$http.get('/api/blogs/'+$scope.blogID).success(function(data) {
 	    		$scope.blog = data
-		    	//$timeout(function() {
-		    		//$location.hash('blogEdit');
-		    		//$anchorScroll(); 
-		    	//}, 100);
 	    	});			
 		};
 
@@ -275,8 +266,17 @@ blogAdminControllers.controller('BlogEditCtrl', ['$scope', '$http', '$stateParam
     	
     	$scope.addEmail = function (index) {
     		$http.get('/api/userlookup/' + $scope.newEmail).success(function(data) {
-        		$scope.blog.blogAuthors.push(data);    			
-    		})
+				console.log("data is:", data)
+				if (data.Email == "") {
+					console.log("No User Found");
+					$scope.newEmail = null;
+					$scope.emailNotFound = true;
+				} else {
+        			$scope.blog.blogAuthors.push(data);
+					$scope.newEmail = null;
+					$scope.emailNotFound = false; 		
+    			};
+			})
     	}
     	
     	$scope.cancelEdit = function() {
