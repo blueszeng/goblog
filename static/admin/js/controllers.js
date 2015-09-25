@@ -253,11 +253,17 @@ blogAdminControllers.controller('BlogEditCtrl', ['$scope', '$http', '$stateParam
 		};
 
     	$scope.update = function(blog) {
-	     	$http.post('/api/blogs', blog).success(function() {
-	            $timeout(function() {
-	            	$state.go('^', {}, {reload: true});
-	            }, 100);
-	     	})
+
+    		if (blog.blogName == "") {
+    			$scope.titleNotFound = true
+    		} else {
+    			$scope.titleNotFound = false
+		     	$http.post('/api/blogs', blog).success(function() {
+		            $timeout(function() {
+		            	$state.go('^', {}, {reload: true});
+		            }, 100);
+		     	})
+    		};
       	};
       	
       	$scope.deleteEmail = function (index) {
