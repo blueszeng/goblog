@@ -181,15 +181,21 @@ blogAdminControllers.controller('UserEditCtrl', ['$rootScope', '$scope', '$http'
 
 	
 	$scope.update = function(user) {
-	 	$http.post('/api/users', user).success(function(data) {
-	        $timeout(function() {
-				$scope.user = data;
-	        }, 100);
-			UserService.saveUser(data);
-			$rootScope.$broadcast('scopeChanged', "root.home")
-	        //$state.go('root.home', {}, {reload: true});			
-			$state.go('root.home')
-		})
+		//console.log(user)
+	 	if (user.displayName == "") {
+			$scope.nameNotFound = true;
+		} else {
+			$scope.nameNotFound = false;
+			$http.post('/api/users', user).success(function(data) {
+		        $timeout(function() {
+					$scope.user = data;
+		        }, 100);
+				UserService.saveUser(data);
+				$rootScope.$broadcast('scopeChanged', "root.home")
+		        $state.go('root.home', {}, {reload: true});			
+				//$state.go('root.home')
+			});			
+		}
 	};
 	
 	$scope.cancelEdit = function() {
@@ -197,12 +203,21 @@ blogAdminControllers.controller('UserEditCtrl', ['$rootScope', '$scope', '$http'
 	};
 	
 	$scope.add = function(newUser) {
-	 	$http.post('/api/users', newUser).success(function(data) {
-	        $timeout(function() {
-				$scope.user = data;
-	            $state.go('^', {}, {reload: true});
-	        }, 100);
-		})
+		console.log(newUser)
+		if (newUser == null) {
+			$scope.emailNotFound = true;
+		} else if (!newUser.email.match(/.+@.+\..+/i)) {
+			$scope.emailNotFound = true;
+			$scope.newUser.email = null;
+		} else {			
+			$scope.emailNotFound = false;
+		 	$http.post('/api/users', newUser).success(function(data) {
+		        $timeout(function() {
+					$scope.user = data;
+		            $state.go('^', {}, {reload: true});
+		        }, 100);
+			});			
+		};
 	};
 
     	
@@ -210,6 +225,16 @@ blogAdminControllers.controller('UserEditCtrl', ['$rootScope', '$scope', '$http'
 	
 blogAdminControllers.controller('BlogsListCtrl', ['$rootScope', '$scope', '$http', '$state', '$timeout', 'UserService', 'BlogIndexService',
 	function($rootScope, $scope, $http, $state, $timeout, UserService, BlogIndexService) {
+
+	$scope.user = UserService.getUser()
+
+	$scope.$watch('user', function() {
+		if (angular.isUndefined($scope.user)) {
+			$state.go('root.home')	   	
+		} else if ($scope.user["role"] != "SiteAdmin") {
+			$state.go('root.home')
+		}
+	});
 
 	$scope.blogLoad = function () {
 		$http.get('/api/blogs/all').success(function(data) {
@@ -253,7 +278,6 @@ blogAdminControllers.controller('BlogEditCtrl', ['$scope', '$http', '$stateParam
 		};
 
     	$scope.update = function(blog) {
-
     		if (blog.blogName == "") {
     			$scope.titleNotFound = true
     		} else {
@@ -271,18 +295,25 @@ blogAdminControllers.controller('BlogEditCtrl', ['$scope', '$http', '$stateParam
     	}
     	
     	$scope.addEmail = function (index) {
-    		$http.get('/api/userlookup/' + $scope.newEmail).success(function(data) {
-				console.log("data is:", data)
-				if (data.Email == "") {
-					console.log("No User Found");
-					$scope.newEmail = null;
+			if ($scope.newEmail == null) {
 					$scope.emailNotFound = true;
-				} else {
-        			$scope.blog.blogAuthors.push(data);
+			} else if (!$scope.newEmail.match(/.+@.+\..+/i)) {
+					$scope.emailNotFound = true;
 					$scope.newEmail = null;
-					$scope.emailNotFound = false; 		
-    			};
-			})
+			} else {		
+	    		$http.get('/api/userlookup/' + $scope.newEmail).success(function(data) {
+					console.log("data is:", data)
+					if (data.Email == "") {
+						console.log("No User Found");
+						$scope.newEmail = null;
+						$scope.emailNotFound = true;
+					} else {
+	        			$scope.blog.blogAuthors.push(data);
+						$scope.newEmail = null;
+						$scope.emailNotFound = false; 		
+	    			};
+				})
+			}
     	}
     	
     	$scope.cancelEdit = function() {
@@ -293,6 +324,16 @@ blogAdminControllers.controller('BlogEditCtrl', ['$scope', '$http', '$stateParam
 blogAdminControllers.controller('PostsListCtrl', ['$rootScope', '$scope', '$http', '$stateParams', '$state', '$timeout', '$filter', 'UserService', 'BlogIndexService',
 	function($rootScope, $scope, $http, $stateParams, $state, $timeout, $filter, UserService, BlogIndexService) {
 
+	$scope.user = UserService.getUser()
+
+	$scope.$watch('user', function() {
+		if (angular.isUndefined($scope.user)) {
+			$state.go('root.home')	   	
+		} else if ($scope.user["role"] != "SiteAdmin") {
+			$state.go('root.home')
+		}
+	});
+	
     $scope.blogID = $stateParams.blogID;
 
 	$scope.$on('scopeChanged', function() {
@@ -356,11 +397,31 @@ blogAdminControllers.controller('PostEditCtrl', ['$scope', '$http', '$stateParam
 		};
 
     	$scope.update = function(post) {
-	     	$http.post('/api/posts/'+$scope.blogID, post).success(function() {
-	            $timeout(function() {
-	            	$state.go('^', {}, {reload: true});
-	            }, 100);
-	     	})
+			if (post.postName == "") {
+    			$scope.titleNotFound = true
+    		} else {
+				$scope.titleNotFound = false
+			}
+
+			if (post.postDateStr == "" || !post.postDateStr.match(/^[0-3]?[0-9]-[0-3]?[0-9]-[0-9]{4}$/)) {
+				$scope.postDateNotFound = true
+			} else {
+				$scope.postDateNotFound = false
+			}
+			
+			if ((post.stopDateStr == "" || !post.stopDateStr.match(/^[0-3]?[0-9]-[0-3]?[0-9]-[0-9]{4}$/)) && post.stopFlag) {
+				$scope.stopDateNotFound = true
+			} else {
+				$scope.stopDateNotFound = false
+			}
+			
+			if (!$scope.titleNotFound && !$scope.postDateNotFound && !$scope.stopDateNotFound) {
+		     	$http.post('/api/posts/'+$scope.blogID, post).success(function() {
+		            $timeout(function() {
+		            	$state.go('^', {}, {reload: true});
+		            }, 100);
+		     	});
+			};
       	};
       	
     	$scope.cancelEdit = function() {

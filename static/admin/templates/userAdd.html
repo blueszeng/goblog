@@ -7,8 +7,9 @@
 	<div class="row">
 		<div class="small-12 columns">
 	      <label>User Email
-	        <input type="text" ng-model="newUser.email" placeholder="Enter new user email address." />
+	        <input type="text" ng-model="newUser.email" placeholder="Enter new user email address." ng-class="{true: 'error'}[emailNotFound]"/>
 	      </label>
+			<small ng-show="emailNotFound" class="error">Invalid Email Address</small>
 	    </div>
 	</div>
     <div class="row">

@@ -7,8 +7,8 @@
 	<div class="row">
 		<div class="small-12 columns"> <!-- blog title --->
 	      <label>Blog Title
-	        <input type="text" ng-model="blog.blogName" placeholder="{{blog.blogName}}" class="error"/>
-	      </label>
+	        <input type="text" ng-model="blog.blogName" placeholder="{{blog.blogName}}" ng-class="{true: 'error'}[titleNotFound]"/>
+		</label>
 			<small ng-show="titleNotFound" class="error">Title is Required</small>
 	    </div>
 	</div>
@@ -94,7 +94,7 @@
 			<label>Add New Authors
 			<div class="row collapse">
 				<div class="small-9 columns">
-					<input type="text" value="Email" ng-model="newEmail" class="error"/>
+					<input type="text" value="Email" ng-model="newEmail" placeholder="Enter user email address." ng-class="{true: 'error'}[emailNotFound]"/>
 					<small ng-show="emailNotFound" class="error">Invalid email address</small>	
 				</div>
 				<div class="small-3 columns">

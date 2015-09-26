@@ -313,6 +313,8 @@ func PostsIndexGet(w http.ResponseWriter, r *http.Request, blogID string, postID
 
 		post.PostAuthor = author
 
+		post.PostDateStr = time.Now().Format("01-02-2006")
+
 		c.Infof("GET /api/posts/%v/new: Exited successfully", blogID)
 		e.Encode(&post)
 	} else {

@@ -7,8 +7,9 @@
 	<div class="row">
 		<div class="small-12 columns">
 	      <label>Display Name
-	        <input type="text" ng-model="user.displayName" placeholder="{{user.displayName}}" />
+	        <input type="text" ng-model="user.displayName" placeholder="{{user.displayName}}" ng-class="{true: 'error'}[nameNotFound]"/>
 	      </label>
+			<small ng-show="nameNotFound" class="error">Name is Required</small>
 	    </div>
 	</div>
     <div class="row">

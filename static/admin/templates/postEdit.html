@@ -7,8 +7,9 @@
 	<div class="row">
 		<div class="small-12 columns"> <!-- blog title --->
 	      <label>Post Title
-	        <input type="text" ng-model="post.postName" placeholder="{{post.postName}}" />
+	        <input type="text" ng-model="post.postName" placeholder="{{post.postName}}" ng-class="{true: 'error'}[titleNotFound]"/>
 	      </label>
+			<small ng-show="titleNotFound" class="error">Title is Required</small>
 	    </div>
 	</div>
 	<div class="row">
@@ -58,7 +59,8 @@
 		<div class="small-4 columns">
 			<div class="row date collapse" id="startDate">
 				<div class="small-12 columns">
-					<input type="text" ng-model="post.postDateStr" datepicker='' required>
+					<input type="text" ng-model="post.postDateStr" datepicker='' ng-class="{true: 'error'}[postDateNotFound]">
+					<small ng-show="postDateNotFound" class="error">Valid Post Date is Required</small>
 				</div>
 			</div>
 		</div>
@@ -68,7 +70,8 @@
 		<div class="small-4 columns">
 			<div class="row date collapse" id="stopDate">
 				<div class="small-12 columns">
-					<input type="text" ng-model="post.stopDateStr" datepicker='' required>
+					<input type="text" ng-model="post.stopDateStr" datepicker='' ng-class="{true: 'error'}[stopDateNotFound]">
+					<small ng-show="stopDateNotFound" class="error">Valid Stop Date Required when Active</small>
 				</div>
 			</div>
 		</div>		
