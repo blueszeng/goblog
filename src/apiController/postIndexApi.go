@@ -240,7 +240,7 @@ func PostsIndexGet(w http.ResponseWriter, r *http.Request, blogID string, postID
 	c.Infof("GET /api/posts/%v/%v: Entered by user: %v (%v)", blogID, postID, userCurrent.Email, userCurrent.Role)
 
 	if err != nil {
-		c.Errorf("GET /api/posts/%v/%v: Error loading user: %v", blogID, postID, err)
+		c.Errorf("GET /api/posts/%v/%v: Error loading post: %v", blogID, postID, err)
 		notFound(w, r)
 		return
 	}

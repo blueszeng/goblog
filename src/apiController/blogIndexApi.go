@@ -247,7 +247,7 @@ func BlogsIndexGet(w http.ResponseWriter, r *http.Request, blogID string) {
 	c.Infof("GET /api/blogs/%v: Entered by user: %v (%v)", blogID, userCurrent.Email, userCurrent.Role)
 
 	if err != nil {
-		c.Errorf("GET /api/blogs: Error loading user: %v", err)
+		c.Errorf("GET /api/blogs: Error loading blog: %v", err)
 		notFound(w, r)
 		return
 	}
