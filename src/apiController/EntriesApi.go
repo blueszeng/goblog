@@ -68,24 +68,24 @@ func entryLoad(c appengine.Context, entryID string, postID string) (Entry, error
 	return entry, nil
 }
 
-func entryLastPost(c appengine.Context) (Entry, error) {
-	q := datastore.NewQuery("PostIndex").
-		Filter("FinishedFlag =", true).
-		Order("SavedDate").Limit(1)
+func entryLastPost(c appengine.Context, postID string) (Entry, error) {
+	postKey := datastore.NewKey(c, "PostIndex", postID, 0, nil)
+
+	q := datastore.NewQuery("Entry").
+		Ancestor(postKey).
+		Order("SavedDate")
 
 	var entries Entries
 	var entry Entry
 
-	_, err := q.GetAll(c, &entries)
-
-	if err != nil {
+	if _, err := q.GetAll(c, &entries); err != nil {
 		return entry, err
 	}
 
 	if entries == nil {
 		return entry, nil
 	} else {
-		return entry, nil
+		return entries[0], nil
 	}
 }
 
@@ -230,13 +230,22 @@ func EntryGet(w http.ResponseWriter, r *http.Request, postID string, entryID str
 			Name:  userCurrent.DisplayName,
 			Email: userCurrent.Email,
 		}
-
+		entry.Text = "Please enter content here"
 		entry.PostAuthor = author
+		entry.FinishedFlag = false
 
 		c.Infof("GET /api/entries/%v/new: Exited successfully", postID)
 		e.Encode(&entry)
 	} else {
-		entry, err := entryLoad(c, entryID, postID)
+
+		var entry Entry
+		var err error
+
+		if entryID == "latest" {
+			entry, err = entryLastPost(c, postID)
+		} else {
+			entry, err = entryLoad(c, entryID, postID)
+		}
 
 		if err != nil {
 			c.Errorf("GET /api/entries/%v/%v: Error lookup entry: %v", postID, entryID, err)
@@ -258,7 +267,7 @@ func EntryGet(w http.ResponseWriter, r *http.Request, postID string, entryID str
 
 		entry.PostAuthor = author
 
-		if entry.ID != entryID {
+		if entry.ID == "" || (entry.ID != entryID && entryID != "latest") {
 			c.Infof("GET /api/entries/%v/%v: No Entry Found", postID, entryID)
 			e.Encode(&notFoundError)
 		} else {

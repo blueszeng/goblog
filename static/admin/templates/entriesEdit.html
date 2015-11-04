@@ -1,0 +1,41 @@
+<form class="simple-form">
+	<div class="row">
+		<div class="small-12 columns"> <!-- blog title --->
+	        <textarea rows="30" ng-model="entry.text" placeholder="{{entry.Text}}" />
+	    </div>
+	</div>
+	<div class="row">
+		<div class="small-12 medium-4 columns">  <!-- blog active flag -->
+			<div class="row">
+				<div class="small-6 columns">
+					<label>Finalized Edit?</label>				
+				</div>
+				<div class="small-6 columns">
+					<div class="hero-box">
+						<label for="finalize" class="switch-light switch-android">
+							<input id="finalize" ng-model="entry.finalize" type="checkbox" />
+							<span>
+								<span>No</span>
+								<span>Yes</span>
+							</span>
+							<a></a>
+						</label>
+					</div>				
+				</div>
+			</div>
+		</div>	
+	</div>
+    <div class="row">
+    	<div class="small-12 columns">
+    		<input type="hidden" ng-model="entry.id" value="{{entry.id}}" />
+    		<div class="row">			
+    			<div class="small-6 columns">
+ 	    			<input class="button success expand" type="submit" ng-click="update(entry)" value="Save" />				
+ 				</div>
+    			<div class="small-6 columns">
+ 					<input class="button alert expand" ng-click="cancelEdit()" value="Cancel" />
+ 				</div>
+    		</div>
+    	</div>
+    </div>
+</form>

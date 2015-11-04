@@ -282,6 +282,9 @@ func PostsIndexGet(w http.ResponseWriter, r *http.Request, blogID string, postID
 
 			postsIndex[i].PostAuthor = author
 
+			postsIndex[i].PostDateStr = postsIndex[i].PostDate.Format("01-02-2006")
+			postsIndex[i].StopDateStr = postsIndex[i].StopDate.Format("01-02-2006")
+
 			if postsIndex[i].PostDate.Before(time.Now()) && postsIndex[i].ActiveFlag {
 				if postsIndex[i].StopFlag && postsIndex[i].StopDate.Before(time.Now()) {
 					postsIndex[i].Displayed = false
@@ -342,6 +345,16 @@ func PostsIndexGet(w http.ResponseWriter, r *http.Request, blogID string, postID
 
 		postIndex.PostDateStr = postIndex.PostDate.Format("01-02-2006")
 		postIndex.StopDateStr = postIndex.StopDate.Format("01-02-2006")
+
+		if postIndex.PostDate.Before(time.Now()) && postIndex.ActiveFlag {
+			if postIndex.StopFlag && postIndex.StopDate.Before(time.Now()) {
+				postIndex.Displayed = false
+			} else {
+				postIndex.Displayed = true
+			}
+		} else {
+			postIndex.Displayed = false
+		}
 
 		if postIndex.ID != postID {
 			c.Infof("GET /api/posts/%v/%v: No Post Found", blogID, postID)

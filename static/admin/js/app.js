@@ -104,5 +104,23 @@ blogAdminApp.config(['$stateProvider', '$urlRouterProvider', function($stateProv
 				controller: 'PostEditCtrl'
 				}
 			}
-		})	 
+		})
+		.state('root.entries', {
+			url:'/blog/:blogID/post/:postID',
+			views: {
+				'container@': {
+				templateUrl: 'templates/entries.html',
+				controller: 'EntryCtrl'
+				}
+			}
+		})
+		.state('root.entries.edit', {
+			url:'/:entryID',
+			views: {
+				'subcontainer': {
+					templateUrl: 'templates/entriesEdit.html',
+					controller: 'EntryEditCtrl'
+				}
+			}
+		})
 }]);

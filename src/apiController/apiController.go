@@ -65,15 +65,15 @@ func ApiGetHandler(w http.ResponseWriter, r *http.Request) {
 	case "loginpage":
 		LoginPageHtml(w, r)
 	case "blogs":
-		//log.Println("view = blogs")
 		if key == "" {
 			BlogsIndexGet(w, r, "")
 		} else {
 			BlogsIndexGet(w, r, key)
 		}
 	case "posts":
-		//log.Println("view = posts")
 		PostsIndexGet(w, r, parent, key)
+	case "entries":
+		EntryGet(w, r, parent, key)
 	default:
 		//log.Println("view not found")
 		notFound(w, r)
@@ -93,8 +93,9 @@ func ApiPostHandler(w http.ResponseWriter, r *http.Request) {
 	case "blogs":
 		BlogIndexPost(w, r)
 	case "posts":
-		//log.Println("view = posts")
 		PostIndexPost(w, r, key)
+	case "entries":
+		EntryPost(w, r, key)
 	default:
 		notFound(w, r)
 	}

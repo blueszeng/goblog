@@ -1,16 +1,20 @@
 <div class="row">
 	<div ng-show="blogLoaded" class="small-12 columns">	
 		<h2>Post Management<a ui-sref="root.blogs" ui-sref-opts="{reload: false}" class="button tiny round secondary right"><i class="fa fa-chevron-left"></i></a></h2>
-		<h3>Blog: {{blog.blogName}}<div ng-if="!blog.active"><small>  (inactive)</small></div></h3>
+		<h3>
+			<i ng-if="blog.active" class="fa fa-toggle-on green"></i>
+			<i ng-if="!blog.active" class="fa fa-toggle-off red"></i>
+			{{blog.blogName}}
+		</h3>
 		<div class="row">
 			<div class="small-6 columns">
-				<div ng-if="blog.commentsAllow">Comments: Allow<ng-if="blog.commentsReview">, Review Required</ng-if></div>
-				<div ng-if="!blog.commentsAllow">Comments: Off</div>
+				<div ng-if="blog.commentsAllow"><label>Comments: Allow<ng-if="blog.commentsReview">, Review Required</ng-if></label></div>
+				<div ng-if="!blog.commentsAllow"></label>Comments: Off</label></div>
 			</div>
 			<div class="small-6 columns left">
-				<div ng-if="blog.sortMethod=='1'">Display: Newest Post on Top</div>
-				<div ng-if="blog.sortMethod=='2'">Display: Oldest Post on Top</div>
-				<div ng-if="blog.sortMethod=='3'">Display: Custom Order</div>					
+				<div ng-if="blog.sortMethod=='1'"><label>Display: Newest Post on Top<label></div>
+				<div ng-if="blog.sortMethod=='2'"><label>Display: Oldest Post on Top<label></div>
+				<div ng-if="blog.sortMethod=='3'"><label>Display: Custom Order<label></div>					
 			</div>
 		</div>
 		<h2><small>List of posts</small>
@@ -37,11 +41,11 @@
 					<i class="fa fa-toggle-on green"></i>
 					<i ng-if="post.displayed" class="fa fa-eye green"></i>
 					<i ng-if="!post.displayed" class="fa fa-eye-slash red"></i>
-					{{post.postName}}
+					<a ng-click="openPost(post)">{{post.postName}}</a>
 				</div>
 				<div ng-if="!post.active">
 					<i class="fa fa-toggle-off red"></i>
-					{{post.postName}}
+					<a ng-click="openPost(post)">{{post.postName}}</a>
 				</div>				
 				<label>Created Date: {{ post.createdDate | date:'medium'}}</label>
 				<label>Author: {{post.postAuthor.Name}} {{post.postAuthor.Email}}</label>

@@ -15,7 +15,17 @@ indexes:
   - name: ActiveFlag
   - name: Position
 
+- kind: Entry
+  ancestor: yes
+  properties:
+  - name: SavedDate
+
 - kind: PostIndex
   ancestor: yes
   properties:
   - name: Name
+
+- kind: PostIndex
+  ancestor: yes
+  properties:
+  - name: SavedDate
